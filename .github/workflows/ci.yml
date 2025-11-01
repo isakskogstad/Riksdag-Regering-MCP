@@ -21,7 +21,9 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          npm install
+          npm ls gh-pages || npm install gh-pages --save-dev
 
       - name: Run ESLint
         run: npm run lint
@@ -45,7 +47,9 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          npm install
+          npm ls gh-pages || npm install gh-pages --save-dev
 
       - name: Build
         run: npm run build
