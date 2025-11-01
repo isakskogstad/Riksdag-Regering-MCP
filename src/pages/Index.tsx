@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QuickSearch } from "@/components/QuickSearch";
+import { FeaturedContent } from "@/components/FeaturedContent";
 import riksdagenLogo from "@/assets/riksdagen-logo.svg";
 import regeringskanslientLogo from "@/assets/regeringskansliet-logo.svg";
 const Index = () => {
@@ -199,6 +200,9 @@ const Index = () => {
         <div className="mb-20 md:mb-28">
           <QuickSearch className="max-w-2xl mx-auto" />
         </div>
+
+        {/* Featured Content - Recent Documents */}
+        <FeaturedContent />
 
         {/* Institutions Grid - scroll target */}
         <div id="institutions" className="grid md:grid-cols-2 gap-8 md:gap-10 lg:gap-12 max-w-6xl mx-auto mb-20 scroll-mt-24">
