@@ -8,6 +8,8 @@ import { Calendar, FileText, ExternalLink } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { sv } from "date-fns/locale";
 import EmptyState from "@/components/EmptyState";
+import { DynamicBreadcrumbs } from "@/components/navigation/DynamicBreadcrumbs";
+import { AppHeader } from "@/components/navigation/AppHeader";
 
 const Dokument = () => {
   const [searchParams] = useSearchParams();
@@ -35,13 +37,13 @@ const Dokument = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="w-full bg-primary py-1"></div>
-      
+      <AppHeader />
+
       <div className="container mx-auto px-4 py-12 max-w-7xl">
+        {/* Breadcrumbs */}
+        <DynamicBreadcrumbs />
+
         <header className="mb-12">
-          <Link to="/riksdagen" className="text-primary hover:underline mb-4 inline-block">
-            ← Tillbaka till Riksdagen
-          </Link>
           <h1 className="text-4xl font-serif font-bold text-foreground mb-4">
             Riksdagsdokument
           </h1>
