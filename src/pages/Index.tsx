@@ -1,12 +1,13 @@
 import { Link } from "react-router-dom";
 import { InstitutionCard } from "@/components/InstitutionCard";
 import { Button } from "@/components/ui/button";
-import { Shield, LogIn, LogOut, Heart } from "lucide-react";
+import { Shield, LogIn, LogOut, Heart, ArrowDown, FileText, Users } from "lucide-react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Skeleton } from "@/components/ui/skeleton";
 import riksdagenLogo from "@/assets/riksdagen-logo.svg";
 import regeringskanslientLogo from "@/assets/regeringskansliet-logo.svg";
 const Index = () => {
@@ -28,6 +29,26 @@ const Index = () => {
       return data.user;
     }
   });
+
+  // Fetch live stats from database
+  const { data: liveStats, isLoading: statsLoading } = useQuery({
+    queryKey: ['homepage-stats'],
+    queryFn: async () => {
+      const [dokumentResult, ledamoterResult] = await Promise.all([
+        supabase.from('riksdagen_dokument').select('id', { count: 'exact', head: true }),
+        supabase.from('riksdagen_ledamoter').select('id', { count: 'exact', head: true }),
+      ]);
+
+      return {
+        dokument: dokumentResult.count || 0,
+        ledamoter: ledamoterResult.count || 0,
+      };
+    },
+  });
+
+  const scrollToInstitutions = () => {
+    document.getElementById('institutions')?.scrollIntoView({ behavior: 'smooth' });
+  };
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast({
@@ -84,19 +105,97 @@ const Index = () => {
             </Link>}
         </div>
 
-        <header className="text-center mb-16 md:mb-20">
-          <div className="max-w-4xl mx-auto space-y-6">
-            <h1 className="hero-title text-foreground">
-              Riksdag & Regering
-            </h1>
-            <div className="w-20 h-1 bg-gradient-to-r from-primary/40 via-primary to-primary/40 mx-auto rounded-full"></div>
-            <p className="body-large text-muted-foreground max-w-2xl mx-auto">
-              Utforska svenska politiska institutioner med AI-baserade informationstjänster
-            </p>
+        {/* Enhanced Hero Section with Live Stats */}
+        <header className="text-center mb-20 md:mb-28">
+          <div className="max-w-5xl mx-auto space-y-8">
+            {/* Main headline */}
+            <div className="space-y-6">
+              <h1 className="hero-title text-foreground">
+                Sök i Sveriges<br className="hidden md:block" />
+                <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                  {" "}Politiska Arkiv
+                </span>
+              </h1>
+
+              <div className="w-24 h-1 bg-gradient-to-r from-primary/40 via-primary to-primary/40 mx-auto rounded-full"></div>
+
+              <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+                AI-driven tillgång till Sveriges största samling av politiska dokument från Riksdagen och Regeringskansliet
+              </p>
+            </div>
+
+            {/* Live Stats - Impressive numbers */}
+            {statsLoading ? (
+              <div className="flex justify-center gap-16 py-6">
+                <div className="text-center">
+                  <Skeleton className="h-16 w-32 mx-auto mb-2" />
+                  <Skeleton className="h-4 w-24 mx-auto" />
+                </div>
+                <div className="hidden md:block w-px bg-border"></div>
+                <div className="text-center">
+                  <Skeleton className="h-16 w-32 mx-auto mb-2" />
+                  <Skeleton className="h-4 w-24 mx-auto" />
+                </div>
+              </div>
+            ) : liveStats && (liveStats.dokument > 0 || liveStats.ledamoter > 0) ? (
+              <div className="flex justify-center gap-12 md:gap-16 py-6">
+                {liveStats.dokument > 0 && (
+                  <>
+                    <div className="text-center group">
+                      <div className="flex items-center justify-center gap-3 mb-2">
+                        <FileText className="h-6 w-6 md:h-8 md:w-8 text-primary/60 transition-transform group-hover:scale-110" />
+                        <div className="text-5xl md:text-6xl font-bold bg-gradient-to-br from-primary to-primary/60 bg-clip-text text-transparent">
+                          {liveStats.dokument.toLocaleString('sv-SE')}
+                        </div>
+                      </div>
+                      <div className="text-sm md:text-base text-muted-foreground font-medium">
+                        Dokument
+                      </div>
+                    </div>
+
+                    {liveStats.ledamoter > 0 && (
+                      <div className="hidden md:block w-px bg-gradient-to-b from-transparent via-border to-transparent"></div>
+                    )}
+                  </>
+                )}
+
+                {liveStats.ledamoter > 0 && (
+                  <div className="text-center group">
+                    <div className="flex items-center justify-center gap-3 mb-2">
+                      <Users className="h-6 w-6 md:h-8 md:w-8 text-secondary/60 transition-transform group-hover:scale-110" />
+                      <div className="text-5xl md:text-6xl font-bold bg-gradient-to-br from-secondary to-secondary/60 bg-clip-text text-transparent">
+                        {liveStats.ledamoter}
+                      </div>
+                    </div>
+                    <div className="text-sm md:text-base text-muted-foreground font-medium">
+                      Ledamöter
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : null}
+
+            {/* CTA Button */}
+            <div className="pt-4">
+              <Button
+                size="lg"
+                variant="gradient"
+                className="h-14 px-8 text-base font-semibold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300"
+                onClick={scrollToInstitutions}
+              >
+                Börja utforska
+                <ArrowDown className="ml-2 h-5 w-5 animate-bounce" />
+              </Button>
+
+              <p className="text-xs text-muted-foreground mt-4">
+                Gratis • Öppen data • Uppdateras kontinuerligt
+              </p>
+            </div>
           </div>
         </header>
 
-        <div className="grid md:grid-cols-2 gap-8 md:gap-10 lg:gap-12 max-w-6xl mx-auto mb-20">
+        {/* Institutions Grid - scroll target */}
+        <div id="institutions" className="grid md:grid-cols-2 gap-8 md:gap-10 lg:gap-12 max-w-6xl mx-auto mb-20 scroll-mt-24">
           <InstitutionCard
             title="Riksdagen"
             description="Utforska Sveriges riksdag med AI. Få insikter om propositioner, debatter och beslutsprocesser."
