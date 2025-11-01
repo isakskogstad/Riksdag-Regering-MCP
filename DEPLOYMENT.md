@@ -51,7 +51,7 @@ git push origin --force --tags
 
 ### Automatisk deployment (GitHub Actions)
 
-Deployment sker automatiskt vid push till `main` branch.
+Deployment sker automatiskt vid push till `main`- eller `work`-branchen (standard).
 
 ### Manuell deployment
 
