@@ -2,33 +2,48 @@
 <html lang="sv">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/x-icon" href="/Riksdag-Regering.AI/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Svenska AI-tjänster | Riksdagen & Regeringskansliet</title>
+    <title>Laddar... | Svenska AI-tjänster</title>
+    
+    <!-- Single Page Apps for GitHub Pages -->
+    <!-- https://github.com/rafgraph/spa-github-pages -->
     <script type="text/javascript">
-      // Single Page Apps for GitHub Pages
-      // https://github.com/rafgraph/spa-github-pages
-      // Copyright (c) 2016 Rafael Pedicini, licensed under the MIT License
+      // Store the current path in sessionStorage so index.html can redirect
       (function(l) {
-        if (l.search[1] === '/' ) {
-          var decoded = l.search.slice(1).split('&').map(function(s) { 
-            return s.replace(/~and~/g, '&')
-          }).join('?');
-          window.history.replaceState(null, null,
-              l.pathname.slice(0, -1) + decoded + l.hash
-          );
+        // Remove the base path from the pathname
+        var path = l.pathname.replace(/^\/Riksdag-Regering\.AI/, '');
+        
+        // Encode the path and store it
+        if (path && path !== '/') {
+          sessionStorage.setItem('redirectPath', path + l.search + l.hash);
         }
-      }(window.location))
+        
+        // Redirect to the base URL with the path encoded in the hash
+        var redirect = l.pathname.slice(0, l.pathname.lastIndexOf('/') + 1) 
+          + '?p=/' 
+          + l.pathname.slice(1).split('/').slice(1).join('/').replace(/&/g, '~and~')
+          + (l.search ? '&q=' + l.search.slice(1).replace(/&/g, '~and~') : '')
+          + l.hash;
+          
+        l.replace(redirect);
+      }(window.location));
     </script>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module">
-      // Redirect to index.html for SPA routing
-      const path = window.location.pathname;
-      if (path !== '/' && !path.includes('.')) {
-        window.location.replace('/Riksdag-Regering.AI/');
-      }
-    </script>
+    <div style="
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    ">
+      <div style="text-align: center;">
+        <h1 style="font-size: 3rem; margin-bottom: 1rem;">⚡</h1>
+        <p style="font-size: 1.25rem; opacity: 0.9;">Laddar...</p>
+      </div>
+    </div>
   </body>
 </html>
