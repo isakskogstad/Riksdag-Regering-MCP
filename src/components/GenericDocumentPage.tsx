@@ -56,6 +56,24 @@ export const GenericDocumentPage = ({
   const itemsPerPage = PAGINATION.ITEMS_PER_PAGE;
   const { trackView } = useDocumentAnalytics();
 
+  // Helper function to convert relative URLs to absolute URLs
+  const getAbsoluteUrl = (url: string | null | undefined): string | null => {
+    if (!url) return null;
+
+    // If URL already starts with http:// or https://, return as-is
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+
+    // If URL starts with /, prepend regeringen.se domain
+    if (url.startsWith('/')) {
+      return `https://www.regeringen.se${url}`;
+    }
+
+    // Otherwise return the URL as-is
+    return url;
+  };
+
   // Debounce search query to avoid excessive API calls
   const debouncedSearchQuery = useDebounce(searchQuery, SEARCH.DEBOUNCE_DELAY);
 
@@ -316,10 +334,10 @@ export const GenericDocumentPage = ({
                     </p>
                   )}
                   <div className="flex flex-wrap gap-2">
-                    {doc.url && (
-                      <a href={doc.url} target="_blank" rel="noopener noreferrer">
-                        <Button 
-                          variant="outline" 
+                    {getAbsoluteUrl(doc.url) && (
+                      <a href={getAbsoluteUrl(doc.url)!} target="_blank" rel="noopener noreferrer">
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => trackView({ tableName, documentId: doc.document_id })}
                         >
@@ -328,16 +346,8 @@ export const GenericDocumentPage = ({
                         </Button>
                       </a>
                     )}
-                    {doc.local_pdf_url && (
-                      <a href={doc.local_pdf_url} target="_blank" rel="noopener noreferrer">
-                        <Button variant="outline" size="sm">
-                          <Download className="h-4 w-4 mr-2" />
-                          Ladda ner PDF
-                        </Button>
-                      </a>
-                    )}
-                    {doc.markdown_url && (
-                      <a href={doc.markdown_url} target="_blank" rel="noopener noreferrer">
+                    {getAbsoluteUrl(doc.markdown_url) && (
+                      <a href={getAbsoluteUrl(doc.markdown_url)!} target="_blank" rel="noopener noreferrer">
                         <Button variant="outline" size="sm">
                           <FileText className="h-4 w-4 mr-2" />
                           Markdown
