@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Subtil, professionell färgpalett */
+    --background: 30 20% 98%;
+    --foreground: 210 20% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 20% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 20% 15%;
+
+    /* Navy Blue - Seriös huvudfärg */
+    --primary: 210 45% 25%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Muted Gold - Diskret accent */
+    --secondary: 45 35% 55%;
+    --secondary-foreground: 210 20% 15%;
+
+    --muted: 210 15% 92%;
+    --muted-foreground: 210 15% 50%;
+
+    --accent: 210 20% 90%;
+    --accent-foreground: 210 20% 15%;
+
+    --destructive: 0 35% 40%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 210 20% 85%;
+    --input: 210 20% 85%;
+    --ring: 210 45% 25%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Semantic Status Colors */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --info: 210 85% 50%;
+    --info-foreground: 0 0% 100%;
+    --warning: 35 92% 55%;
+    --warning-foreground: 210 40% 15%;
+    --error: 0 84% 60%;
+    --error-foreground: 0 0% 100%;
+  }
+
+  .dark {
+    --background: 210 25% 8%;
+    --foreground: 30 15% 95%;
+
+    --card: 210 20% 12%;
+    --card-foreground: 30 15% 95%;
+
+    --popover: 210 20% 12%;
+    --popover-foreground: 30 15% 95%;
+
+    --primary: 210 50% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 45 30% 50%;
+    --secondary-foreground: 210 20% 15%;
+
+    --muted: 210 20% 16%;
+    --muted-foreground: 210 15% 65%;
+
+    --accent: 210 20% 20%;
+    --accent-foreground: 30 15% 95%;
+
+    --destructive: 0 40% 45%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 210 20% 20%;
+    --input: 210 20% 20%;
+    --ring: 210 50% 60%;
+
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Semantic Status Colors - Dark Mode */
+    --success: 142 70% 45%;
+    --success-foreground: 0 0% 100%;
+    --info: 210 85% 55%;
+    --info-foreground: 0 0% 100%;
+    --warning: 35 92% 60%;
+    --warning-foreground: 210 40% 10%;
+    --error: 0 72% 55%;
+    --error-foreground: 0 0% 100%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
