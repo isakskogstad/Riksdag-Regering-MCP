@@ -8,7 +8,8 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-dist
+# dist kommenterad ut för att tillåta deployment av byggda filer
+# dist
 dist-ssr
 *.local
 
