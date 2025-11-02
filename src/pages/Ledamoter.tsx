@@ -6,11 +6,35 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import FilterBar from "@/components/FilterBar";
 import EmptyState from "@/components/EmptyState";
+import { SagtOchGjortStats } from "@/components/SagtOchGjortStats";
+
+interface Ledamot {
+  id: string;
+  intressent_id: string;
+  fornamn: string;
+  efternamn: string;
+  tilltalsnamn?: string;
+  parti?: string;
+  valkrets?: string;
+  bild_url?: string;
+  local_bild_url?: string;
+  status?: string;
+}
 
 const Ledamoter = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedLedamot, setSelectedLedamot] = useState<Ledamot | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
   const { data: ledamoter, isLoading } = useQuery({
     queryKey: ['ledamoter'],
     queryFn: async () => {
@@ -44,6 +68,11 @@ const Ledamoter = () => {
       l.valkrets?.toLowerCase().includes(searchLower)
     );
   });
+
+  const handleLedamotClick = (ledamot: Ledamot) => {
+    setSelectedLedamot(ledamot);
+    setDialogOpen(true);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -89,7 +118,11 @@ const Ledamoter = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredLedamoter?.map((ledamot) => (
-              <Card key={ledamot.id} className="hover:shadow-lg transition-shadow">
+              <Card
+                key={ledamot.id}
+                className="hover:shadow-lg transition-all cursor-pointer hover:scale-[1.02]"
+                onClick={() => handleLedamotClick(ledamot)}
+              >
                 <CardHeader className="text-center">
                   <Avatar className="h-24 w-24 mx-auto mb-4">
                     <AvatarImage 
@@ -120,6 +153,49 @@ const Ledamoter = () => {
             ))}
           </div>
         )}
+
+        {/* Ledamot details dialog */}
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            {selectedLedamot && (
+              <>
+                <DialogHeader>
+                  <div className="flex items-center gap-4 mb-4">
+                    <Avatar className="h-20 w-20">
+                      <AvatarImage
+                        src={selectedLedamot.local_bild_url || selectedLedamot.bild_url || undefined}
+                        alt={`${selectedLedamot.fornamn} ${selectedLedamot.efternamn}`}
+                      />
+                      <AvatarFallback className="text-2xl">
+                        {selectedLedamot.fornamn?.[0]}{selectedLedamot.efternamn?.[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <DialogTitle className="text-2xl">
+                        {selectedLedamot.tilltalsnamn || selectedLedamot.fornamn} {selectedLedamot.efternamn}
+                      </DialogTitle>
+                      <DialogDescription className="flex items-center gap-2 mt-2">
+                        {selectedLedamot.parti && (
+                          <Badge className={`${partiColors[selectedLedamot.parti] || 'bg-gray-600'} text-white`}>
+                            {selectedLedamot.parti}
+                          </Badge>
+                        )}
+                        {selectedLedamot.valkrets && (
+                          <span className="text-sm">{selectedLedamot.valkrets}</span>
+                        )}
+                      </DialogDescription>
+                    </div>
+                  </div>
+                </DialogHeader>
+
+                {/* Statistics */}
+                <div className="mt-6">
+                  <SagtOchGjortStats intressentId={selectedLedamot.intressent_id} />
+                </div>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

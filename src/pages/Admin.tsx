@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Shield, Database, Download, Settings, ArrowLeft, BarChart3, Zap } from "lucide-react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { DataProcessControl } from "@/components/admin/DataProcessControl";
-import FileQueueManager from "@/components/FileQueueManager";
+import { FileQueueManager } from "@/components/admin/FileQueueManager";
 import { SyncProgress } from "@/components/admin/SyncProgress";
 import RiksdagenDataFetchConfig from "@/components/admin/RiksdagenDataFetchConfig";
 import { DatabaseStats } from "@/components/admin/DatabaseStats";
@@ -23,7 +23,6 @@ import { AdminNotificationsCritical } from "@/components/admin/AdminNotification
 import { DashboardQuickStats } from "@/components/admin/DashboardQuickStats";
 import { AdminActionCenter } from "@/components/admin/AdminActionCenter";
 import { StorageCleanup } from "@/components/admin/StorageCleanup";
-import FileQueueManagerImproved from "@/components/admin/FileQueueManagerImproved";
 import { AutomaticFileProcessor } from "@/components/admin/AutomaticFileProcessor";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, AlertCircle } from "lucide-react";
@@ -115,7 +114,7 @@ const Admin = () => {
             {/* HUVUDSEKTION */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <AdminActionCenter />
-              <FileQueueManagerImproved />
+              <FileQueueManager />
             </div>
 
             {/* DETALJSEKTION (Collapsible) */}
@@ -173,7 +172,7 @@ const Admin = () => {
 
           <TabsContent value="files" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <FileQueueManagerImproved />
+              <FileQueueManager />
               <StorageQuota />
             </div>
             <StorageBrowserImproved />

@@ -10,10 +10,11 @@ import { formatDistanceToNow } from "date-fns";
 import { sv } from "date-fns/locale";
 import EmptyState from "@/components/EmptyState";
 import FilterBar from "@/components/FilterBar";
+import { getAbsoluteUrl } from "@/utils/urlHelpers";
 
 const RegeringskanslientDokument = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   const { data: dokument, isLoading } = useQuery({
     queryKey: ['regeringskansliet-dokument'],
     queryFn: async () => {
@@ -21,7 +22,7 @@ const RegeringskanslientDokument = () => {
         .from('regeringskansliet_dokument')
         .select('*')
         .order('publicerad_datum', { ascending: false });
-      
+
       if (error) throw error;
       return data;
     },
@@ -40,7 +41,7 @@ const RegeringskanslientDokument = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="w-full bg-primary py-1"></div>
-      
+
       <div className="container mx-auto px-4 py-12 max-w-7xl">
         <header className="mb-12">
           <Link to="/regeringskansliet" className="text-primary hover:underline mb-4 inline-block">
@@ -112,9 +113,9 @@ const RegeringskanslientDokument = () => {
                         {dok.publicerad_datum && (
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            {formatDistanceToNow(new Date(dok.publicerad_datum), { 
-                              addSuffix: true, 
-                              locale: sv 
+                            {formatDistanceToNow(new Date(dok.publicerad_datum), {
+                              addSuffix: true,
+                              locale: sv
                             })}
                           </div>
                         )}
@@ -142,7 +143,7 @@ const RegeringskanslientDokument = () => {
                     <div className="flex flex-col gap-2">
                       {dok.url && (
                         <a
-                          href={dok.url}
+                          href={getAbsoluteUrl(dok.url) || '#'}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-1 text-sm text-primary hover:underline"
@@ -152,7 +153,7 @@ const RegeringskanslientDokument = () => {
                       )}
                       {dok.markdown_url && (
                         <a
-                          href={dok.markdown_url}
+                          href={getAbsoluteUrl(dok.markdown_url) || '#'}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-1 text-sm text-primary hover:underline"

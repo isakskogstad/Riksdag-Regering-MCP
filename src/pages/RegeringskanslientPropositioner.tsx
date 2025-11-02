@@ -10,10 +10,11 @@ import { formatDistanceToNow } from "date-fns";
 import { sv } from "date-fns/locale";
 import EmptyState from "@/components/EmptyState";
 import FilterBar from "@/components/FilterBar";
+import { getAbsoluteUrl } from "@/utils/urlHelpers";
 
 const RegeringskanslientPropositioner = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   const { data: propositioner, isLoading } = useQuery({
     queryKey: ['propositioner'],
     queryFn: async () => {
@@ -21,7 +22,7 @@ const RegeringskanslientPropositioner = () => {
         .from('regeringskansliet_propositioner')
         .select('*')
         .order('publicerad_datum', { ascending: false });
-      
+
       if (error) throw error;
       return data;
     },
@@ -39,7 +40,7 @@ const RegeringskanslientPropositioner = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="w-full bg-primary py-1"></div>
-      
+
       <div className="container mx-auto px-4 py-12 max-w-7xl">
         <header className="mb-12">
           <Link to="/regeringskansliet" className="text-primary hover:underline mb-4 inline-block">
@@ -101,9 +102,9 @@ const RegeringskanslientPropositioner = () => {
                         {prop.publicerad_datum && (
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            {formatDistanceToNow(new Date(prop.publicerad_datum), { 
-                              addSuffix: true, 
-                              locale: sv 
+                            {formatDistanceToNow(new Date(prop.publicerad_datum), {
+                              addSuffix: true,
+                              locale: sv
                             })}
                           </div>
                         )}
@@ -122,7 +123,7 @@ const RegeringskanslientPropositioner = () => {
                       )}
                       {prop.url && (
                         <a
-                          href={prop.url}
+                          href={getAbsoluteUrl(prop.url) || '#'}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-1 text-sm text-primary hover:underline"
@@ -132,7 +133,7 @@ const RegeringskanslientPropositioner = () => {
                       )}
                       {prop.pdf_url && !prop.local_pdf_url && (
                         <a
-                          href={prop.pdf_url}
+                          href={getAbsoluteUrl(prop.pdf_url) || '#'}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-1 text-sm text-primary hover:underline"

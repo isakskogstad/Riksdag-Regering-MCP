@@ -7,14 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Search, FileText, Calendar, User, Download, ArrowLeft, FileDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, FileText, Calendar, User, Download, ArrowLeft, FileDown, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
-import ProgressTracker from "@/components/ProgressTracker";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { AdvancedFilters } from "@/components/AdvancedFilters";
 import { useDocumentAnalytics } from "@/hooks/useDocumentAnalytics";
 import { useDebounce } from "@/hooks/useDebounce";
 import { exportToCSV, exportToJSON } from "@/lib/exportUtils";
+import { getAbsoluteUrl } from "@/utils/urlHelpers";
 import { format } from "date-fns";
 import { PAGINATION, SEARCH } from "@/config/constants";
 import {
@@ -55,24 +55,6 @@ export const GenericDocumentPage = ({
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const itemsPerPage = PAGINATION.ITEMS_PER_PAGE;
   const { trackView } = useDocumentAnalytics();
-
-  // Helper function to convert relative URLs to absolute URLs
-  const getAbsoluteUrl = (url: string | null | undefined): string | null => {
-    if (!url) return null;
-
-    // If URL already starts with http:// or https://, return as-is
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url;
-    }
-
-    // If URL starts with /, prepend regeringen.se domain
-    if (url.startsWith('/')) {
-      return `https://www.regeringen.se${url}`;
-    }
-
-    // Otherwise return the URL as-is
-    return url;
-  };
 
   // Debounce search query to avoid excessive API calls
   const debouncedSearchQuery = useDebounce(searchQuery, SEARCH.DEBOUNCE_DELAY);
@@ -119,7 +101,7 @@ export const GenericDocumentPage = ({
   const filteredDocuments = useMemo(() => {
     if (!documents) return [];
     if (selectedCategories.length === 0) return documents;
-    
+
     return documents.filter((doc: any) => {
       if (!doc.kategorier || !Array.isArray(doc.kategorier)) return false;
       return selectedCategories.some((cat) => doc.kategorier.includes(cat));
@@ -168,14 +150,16 @@ export const GenericDocumentPage = ({
   const renderLocalFiles = (localFiles: any) => {
     if (!localFiles) return null;
 
+    // Handle empty arrays
     const files = Array.isArray(localFiles) ? localFiles : [localFiles];
-    
+    if (files.length === 0) return null;
+
     return (
       <div className="flex flex-wrap gap-2 mt-2">
         {files.map((file: any, idx: number) => {
           const fileName = file.name || file.filename || `Fil ${idx + 1}`;
           const fileUrl = file.url || file.local_url || file;
-          
+
           if (typeof fileUrl === 'string' && fileUrl) {
             return (
               <a
@@ -196,6 +180,13 @@ export const GenericDocumentPage = ({
     );
   };
 
+  // Helper to check if local files exist and have data
+  const hasLocalFiles = (localFiles: any) => {
+    if (!localFiles) return false;
+    if (Array.isArray(localFiles)) return localFiles.length > 0;
+    return true;
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-6 md:py-8 max-w-7xl">
@@ -206,13 +197,11 @@ export const GenericDocumentPage = ({
               Tillbaka
             </Button>
           </Link>
-          
+
           <h1 className="text-3xl md:text-4xl font-serif font-bold mb-4 text-foreground">
             {title}
           </h1>
           <p className="text-muted-foreground text-lg mb-6">{description}</p>
-
-          <ProgressTracker source={source} />
 
           <div className="flex flex-col md:flex-row gap-3 md:gap-4 items-stretch md:items-center mb-6">
             <div className="relative flex-1 min-w-0">
@@ -333,29 +322,25 @@ export const GenericDocumentPage = ({
                       {doc.innehall}
                     </p>
                   )}
-                  <div className="flex flex-wrap gap-2">
-                    {getAbsoluteUrl(doc.url) && (
+
+                  {/* Show files from Supabase Storage if available */}
+                  {hasLocalFiles(doc.local_files) && renderLocalFiles(doc.local_files)}
+
+                  {/* If no local files, show external link button */}
+                  {!hasLocalFiles(doc.local_files) && getAbsoluteUrl(doc.url) && (
+                    <div className="flex flex-wrap gap-2 mt-2">
                       <a href={getAbsoluteUrl(doc.url)!} target="_blank" rel="noopener noreferrer">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => trackView({ tableName, documentId: doc.document_id })}
                         >
-                          <FileText className="h-4 w-4 mr-2" />
-                          Visa original
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          Öppna externt
                         </Button>
                       </a>
-                    )}
-                    {getAbsoluteUrl(doc.markdown_url) && (
-                      <a href={getAbsoluteUrl(doc.markdown_url)!} target="_blank" rel="noopener noreferrer">
-                        <Button variant="outline" size="sm">
-                          <FileText className="h-4 w-4 mr-2" />
-                          Markdown
-                        </Button>
-                      </a>
-                    )}
-                  </div>
-                  {(doc.local_files || doc.local_bilagor) && renderLocalFiles(doc.local_files || doc.local_bilagor)}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -371,7 +356,7 @@ export const GenericDocumentPage = ({
                       className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                     />
                   </PaginationItem>
-                  
+
                   {Array.from({ length: totalPages }, (_, i) => i + 1)
                     .filter((page) => {
                       if (totalPages <= 7) return true;

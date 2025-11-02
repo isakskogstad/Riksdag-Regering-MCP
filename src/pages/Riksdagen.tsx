@@ -1,5 +1,9 @@
 import { Link } from "react-router-dom";
-import { FileText, Users, MessageSquare, Vote } from "lucide-react";
+import {
+  FileText, Users, MessageSquare, Vote,
+  FileEdit, BookOpen, FileCheck, MessageCircle,
+  HelpCircle, ScrollText
+} from "lucide-react";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useQuery } from "@tanstack/react-query";
@@ -37,13 +41,6 @@ const Riksdagen = () => {
       variant: "info" as const
     },
     {
-      title: "Dokument",
-      description: "Sök och läs propositioner, betänkanden och andra riksdagsdokument",
-      icon: FileText,
-      href: "/riksdagen/dokument",
-      variant: "success" as const
-    },
-    {
       title: "Anföranden",
       description: "Följ debatter och läs anföranden från riksdagens kammare",
       icon: MessageSquare,
@@ -56,6 +53,48 @@ const Riksdagen = () => {
       icon: Vote,
       href: "/riksdagen/voteringar",
       variant: "error" as const
+    },
+    {
+      title: "Motioner",
+      description: "Förslag från riksdagens ledamöter till riksdagsbeslut",
+      icon: FileEdit,
+      href: "/riksdagen/motioner",
+      variant: "success" as const
+    },
+    {
+      title: "Protokoll",
+      description: "Protokoll från kammarens sammanträden",
+      icon: BookOpen,
+      href: "/riksdagen/protokoll",
+      variant: "info" as const
+    },
+    {
+      title: "Betänkanden",
+      description: "Utskottens betänkanden och utlåtanden samt riksdagens beslut",
+      icon: FileCheck,
+      href: "/riksdagen/betankanden",
+      variant: "success" as const
+    },
+    {
+      title: "Interpellationer",
+      description: "Interpellationer från ledamöter till regeringen",
+      icon: MessageCircle,
+      href: "/riksdagen/interpellationer",
+      variant: "warning" as const
+    },
+    {
+      title: "Skriftliga frågor",
+      description: "Skriftliga frågor från ledamöter till regeringen",
+      icon: HelpCircle,
+      href: "/riksdagen/fragor",
+      variant: "info" as const
+    },
+    {
+      title: "Propositioner",
+      description: "Propositioner och skrivelser från regeringen till riksdagen",
+      icon: ScrollText,
+      href: "/riksdagen/propositioner",
+      variant: "success" as const
     }
   ];
 
@@ -158,7 +197,7 @@ const Riksdagen = () => {
         ) : null}
 
         {/* Primary sections - Enhanced visual hierarchy */}
-        <div className="grid md:grid-cols-2 gap-8 mb-20">
+        <div className="grid md:grid-cols-3 gap-6 mb-20">
           {sections.map((section) => (
             <Link key={section.href} to={section.href}>
               <Card className="group h-full card-elevated hover:scale-[1.02] cursor-pointer border-2 hover:border-primary/30 transition-all duration-300">

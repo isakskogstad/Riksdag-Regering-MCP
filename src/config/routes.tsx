@@ -17,6 +17,14 @@ const Pressmeddelanden = lazy(() => import('@/pages/Pressmeddelanden'));
 const Admin = lazy(() => import('@/pages/Admin'));
 const Favorites = lazy(() => import('@/pages/Favorites'));
 
+// Riksdagens specifika dokumenttyper
+const Motioner = lazy(() => import('@/pages/Motioner'));
+const Protokoll = lazy(() => import('@/pages/Protokoll'));
+const Betankanden = lazy(() => import('@/pages/Betankanden'));
+const Interpellationer = lazy(() => import('@/pages/Interpellationer'));
+const Fragor = lazy(() => import('@/pages/Fragor'));
+const RiksdagenPropositioner = lazy(() => import('@/pages/RiksdagenPropositioner'));
+
 // Generic document page for Regeringskansliet categories
 const GenericDocumentPage = lazy(() => import('@/pages/GenericDocumentPage'));
 
@@ -90,6 +98,32 @@ export const routes: RouteObject[] = [
     element: <Voteringar />,
   },
 
+  // Riksdagens specifika dokumenttyper
+  {
+    path: '/riksdagen/motioner',
+    element: <Motioner />,
+  },
+  {
+    path: '/riksdagen/protokoll',
+    element: <Protokoll />,
+  },
+  {
+    path: '/riksdagen/betankanden',
+    element: <Betankanden />,
+  },
+  {
+    path: '/riksdagen/interpellationer',
+    element: <Interpellationer />,
+  },
+  {
+    path: '/riksdagen/fragor',
+    element: <Fragor />,
+  },
+  {
+    path: '/riksdagen/propositioner',
+    element: <RiksdagenPropositioner />,
+  },
+
   // Regeringskansliet routes
   {
     path: '/regeringskansliet',
@@ -142,6 +176,12 @@ export const navigation = {
         { title: 'Ledamöter', path: '/riksdagen/ledamoter' },
         { title: 'Anföranden', path: '/riksdagen/anforanden' },
         { title: 'Voteringar', path: '/riksdagen/voteringar' },
+        { title: 'Motioner', path: '/riksdagen/motioner' },
+        { title: 'Protokoll', path: '/riksdagen/protokoll' },
+        { title: 'Betänkanden', path: '/riksdagen/betankanden' },
+        { title: 'Interpellationer', path: '/riksdagen/interpellationer' },
+        { title: 'Skriftliga frågor', path: '/riksdagen/fragor' },
+        { title: 'Propositioner', path: '/riksdagen/propositioner' },
       ],
     },
     {
