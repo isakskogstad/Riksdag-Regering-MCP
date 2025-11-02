@@ -6,7 +6,8 @@ import { createHtmlPlugin } from "vite-plugin-html";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: mode === 'production' ? '/Riksdag-Regering.AI/' : '/',
+  // Use root path for custom domains, subdirectory for GitHub Pages
+  base: process.env.VITE_DEPLOY_TARGET === 'github-pages' ? '/Riksdag-Regering.AI/' : '/',
   server: {
     host: "::",
     port: 8080,
