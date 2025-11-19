@@ -41,3 +41,6 @@ mcp/.mcp_token
 
 # Git backup files
 .git-backup-*
+
+# MCP Registry tokens
+mcp/.mcpregistry_*
