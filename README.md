@@ -1,4 +1,12 @@
-# Riksdag & Regering MCP Server
+# 🏛️ Riksdag-Regering MCP Server
+
+[![Server Status](https://img.shields.io/website?url=https%3A%2F%2Friksdag-regering-ai.onrender.com%2Fhealth&label=Server%20Status&up_message=online&down_message=offline)](https://riksdag-regering-ai.onrender.com/health)
+[![npm version](https://img.shields.io/npm/v/riksdag-regering-mcp?logo=npm)](https://www.npmjs.com/package/riksdag-regering-mcp)
+[![MCP Protocol](https://img.shields.io/badge/MCP%20Protocol-2024--11--05-blue?logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIGZpbGw9IndoaXRlIi8+CiAgPHBhdGggZD0iTTEyIDJMMiA3VjE3TDEyIDIyTDIyIDE3VjdMMTIgMloiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4=)](https://modelcontextprotocol.io/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-20+-green?logo=node.js)](https://nodejs.org/)
+[![Deploy](https://img.shields.io/badge/Deploy-Render-46E3B7?logo=render)](https://riksdag-regering-ai.onrender.com)
 
 En [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server som ger AI-assistenter tillgång till Sveriges Riksdags- och Regeringskansliets öppna data. Sök, analysera och jämför dokument, ledam
 
@@ -67,9 +75,46 @@ curl -X POST https://riksdag-regering-ai.onrender.com/mcp \
 
 ---
 
-### 💻 Alternativ 2: Lokal Installation
+### 📦 Alternativ 2: npm Package (Rekommenderat för utvecklare)
 
-För utveckling eller om du vill köra servern lokalt:
+Installera direkt från npm registry:
+
+**Fördelar:**
+- ✅ Enkel installation med ett kommando
+- ✅ Automatiska uppdateringar via npm
+- ✅ Fungerar i alla MCP-kompatibla miljöer
+- ✅ Perfekt för utveckling och testning
+
+```bash
+# Installera globalt
+npm install -g riksdag-regering-mcp
+
+# Eller installera lokalt i ditt projekt
+npm install riksdag-regering-mcp
+```
+
+#### STDIO-konfiguration för Claude Desktop
+
+```json
+{
+  "mcpServers": {
+    "riksdag-regering": {
+      "command": "npx",
+      "args": ["riksdag-regering-mcp"],
+      "env": {
+        "SUPABASE_URL": "https://your-project.supabase.co",
+        "SUPABASE_ANON_KEY": "your-anon-key"
+      }
+    }
+  }
+}
+```
+
+---
+
+### 💻 Alternativ 3: Lokal Installation från Källkod
+
+För utveckling eller om du vill modifiera servern lokalt:
 
 **Fördelar:**
 - ✅ Full kontroll över data och prestanda
@@ -177,26 +222,48 @@ Färdiga mallar för vanliga uppgifter via `prompts/list`:
 - `riksmote_summary` - Sammanfatta ett riksmöte
 - `trend_analysis` - Analysera trender över tid
 
+---
+
+## 🔌 API-integrationer
+
+Servern kopplar till tre av Sveriges viktigaste öppna data-API:er:
+
+**Riksdagens Öppna Data API** ([data.riksdagen.se](https://data.riksdagen.se/))
+Tillgång till läroplaner (LGR11, GY11), ämnen, kurser och gymnasieprogram. API:et täcker Sveriges kompletta utbildningssystem från grundskola till gymnasiet.
+
+**g0v.se Regeringskansliets Data** ([g0v.se](https://g0v.se/))
+Aggregerad data från regeringskansliet inklusive pressmeddelanden, propositioner, SOU-betänkanden, direktiv och departementsserier.
+
+**Supabase Real-time Database**
+Cachad och optimerad datalagring med real-time uppdateringar. Snabb åtkomst till 48 tabeller med över 500,000 poster.
 
 ---
 
 ## 📖 Användningsområden
 
-### 👨‍🎓 För Politiker och beslutsfattare
+### 👨‍🎓 För Politiker och Beslutsfattare
 - Spåra voteringsmönster över partier
 - Analysera ledamöters aktivitet och engagemang
+- Övervaka dokumenttrender över tid
+- Identifiera samarbetsmönster
 
-### 📰 För Journalister och forskare
+### 📰 För Journalister och Forskare
 - Korsreferera riksdags- och regeringsdokument
 - Hitta relevanta anföranden och debatter
+- Identifiera mest aktiva ledamöter inom specifika frågor
+- Analysera politiska trender
 
-### 📊 För dataanalytiker
+### 📊 För Dataanalytiker
 - Tidsserieanalys av parlamentarisk aktivitet
 - Partijämförelser och koalitionsanalys
+- Dokumentpåverkansanalys
+- Röstningsbeteendeanalys
 
 ### 🤖 För AI-utvecklare
 - Utöka LLM:er med svensk politisk data
 - Bygg konversationsgränssnitt för medborgardata
+- Skapa faktakontrollverktyg
+- Automatisera politisk rapportering
 
 ---
 
@@ -242,6 +309,24 @@ npm run mcp:format
 
 ---
 
+## 🤝 Bidra
+
+Bidrag välkomnas! Vänligen:
+
+1. Forka repository
+2. Skapa en feature branch (`git checkout -b feature/fantastisk-funktion`)
+3. Commita dina ändringar (`git commit -m 'Lägg till fantastisk funktion'`)
+4. Pusha till branchen (`git push origin feature/fantastisk-funktion`)
+5. Öppna en Pull Request
+
+**Utvecklingsriktlinjer:**
+- Följ befintlig kodstil
+- Lägg till tester för ny funktionalitet
+- Uppdatera dokumentation
+- Håll commits små och fokuserade
+
+---
+
 ## 📄 Licens
 
 MIT License - Se [LICENSE](LICENSE) för detaljer.
@@ -259,11 +344,12 @@ MIT License - Se [LICENSE](LICENSE) för detaljer.
 
 ---
 
-## 📞Support
+## 📞 Support
 
 ### Kontakt
 - **Email:** [isak.skogstad@me.com](mailto:isak.skogstad@me.com)
-
+- **GitHub Issues:** [Rapportera problem](https://github.com/KSAklfszf921/Riksdag-Regering.AI/issues)
+- **GitHub Discussions:** [Diskussioner och frågor](https://github.com/KSAklfszf921/Riksdag-Regering.AI/discussions)
 
 ### Länkar
 - **🌐 Live Server:** [riksdag-regering-ai.onrender.com](https://riksdag-regering-ai.onrender.com)
