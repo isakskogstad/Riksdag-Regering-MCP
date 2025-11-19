@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Riksdag & Regering MCP Server</title>
-    <meta name="description" content="Model Context Protocol server för Sveriges Riksdag och Regeringskansliet - Sök, analysera och jämför svensk politisk data">
+    <meta name="description" content="Model Context Protocol server för Sveriges Riksdag och Regeringskansliet">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>">
 
     <style>
@@ -15,9 +15,8 @@
         }
 
         :root {
-            --primary-color: #007aff;
-            --sweden-blue: #006AA7;
-            --sweden-yellow: #FECC00;
+            --primary-color: #006AA7;
+            --accent-color: #007aff;
             --success-color: #34c759;
             --danger-color: #ff3b30;
             --warning-color: #ff9500;
@@ -63,14 +62,21 @@
         .logo {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 16px;
             text-decoration: none;
             color: var(--text-primary);
         }
 
-        .logo-icon {
-            font-size: 28px;
-            line-height: 1;
+        .logo-images {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .logo-images img {
+            height: 36px;
+            width: auto;
+            object-fit: contain;
         }
 
         .logo-text h1 {
@@ -147,28 +153,25 @@
 
         /* Hero Section */
         .hero {
-            padding: 60px 0;
+            padding: 60px 0 40px;
             text-align: center;
         }
 
         .hero h1 {
-            font-size: 48px;
+            font-size: 42px;
             font-weight: 600;
             margin-bottom: 16px;
-            background: linear-gradient(135deg, var(--sweden-blue) 0%, var(--primary-color) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--primary-color);
         }
 
         .hero .subtitle {
-            font-size: 22px;
+            font-size: 20px;
             color: var(--text-secondary);
-            margin-bottom: 8px;
+            margin-bottom: 24px;
         }
 
         .hero .description {
-            font-size: 17px;
+            font-size: 16px;
             color: var(--text-secondary);
             margin-bottom: 32px;
             max-width: 700px;
@@ -198,7 +201,7 @@
         /* Quick Links */
         .quick-links {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 16px;
             margin-bottom: 60px;
         }
@@ -222,19 +225,14 @@
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
         }
 
-        .quick-link-icon {
-            font-size: 32px;
-            margin-bottom: 12px;
-        }
-
         .quick-link-title {
             font-size: 17px;
             font-weight: 600;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
 
         .quick-link-desc {
-            font-size: 13px;
+            font-size: 14px;
             color: var(--text-secondary);
             line-height: 1.5;
         }
@@ -246,32 +244,11 @@
             border-top: 1px solid var(--border-color);
         }
 
-        .docs-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-        }
-
         .docs-title {
             font-size: 28px;
             font-weight: 600;
-        }
-
-        .docs-refresh {
-            padding: 8px 16px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            font-size: 13px;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .docs-refresh:hover {
-            background: white;
-            color: var(--text-primary);
+            margin-bottom: 24px;
+            text-align: center;
         }
 
         /* Markdown Content */
@@ -503,8 +480,16 @@
                 padding: 0 16px;
             }
 
+            .logo-images {
+                gap: 8px;
+            }
+
+            .logo-images img {
+                height: 28px;
+            }
+
             .hero h1 {
-                font-size: 36px;
+                font-size: 32px;
             }
 
             .hero .subtitle {
@@ -516,7 +501,7 @@
             }
 
             .hero {
-                padding: 40px 0;
+                padding: 40px 0 30px;
             }
 
             .content-card {
@@ -541,9 +526,12 @@
     <header>
         <div class="header-container">
             <a href="/" class="logo">
-                <span class="logo-icon">🏛️</span>
+                <div class="logo-images">
+                    <img src="https://mb.cision.com/Public/20518/3733746/9c8944283144c24f_800x800ar.png" alt="Riksdagen" title="Riksdagen">
+                    <img src="https://searchvectorlogo.com/wp-content/uploads/2020/02/regeringskansliet-logo-vector.png" alt="Regeringskansliet" title="Regeringskansliet">
+                </div>
                 <div class="logo-text">
-                    <h1>Riksdag & Regering MCP</h1>
+                    <h1>MCP Server</h1>
                 </div>
             </a>
             <div class="nav-right">
@@ -562,28 +550,23 @@
     </header>
 
     <main>
-        <!-- Hero Section -->
         <div class="container">
+            <!-- Hero Section -->
             <div class="hero">
-                <h1>🏛️ Riksdag & Regering MCP</h1>
+                <h1>Riksdag & Regering MCP Server</h1>
                 <p class="subtitle">Model Context Protocol för svensk demokratidata</p>
                 <p class="description">
-                    <strong>Svenska:</strong> En MCP-server som ger AI-assistenter tillgång till Sveriges Riksdags- och Regeringskansliets öppna data.
-                    Sök, analysera och jämför dokument, ledamöter, anföranden, voteringar och mycket mer.<br><br>
+                    <strong>Svenska:</strong> En MCP-server som ger AI-assistenter tillgång till Sveriges Riksdags- och Regeringskansliets öppna data.<br><br>
                     <strong>English:</strong> An MCP server providing AI assistants with access to Swedish Parliament and Government open data.
-                    Search, analyze and compare documents, members, speeches, votes and more.
                 </p>
 
                 <!-- Badges -->
                 <div class="badges">
                     <img src="https://img.shields.io/website?url=https%3A%2F%2Friksdag-regering-ai.onrender.com%2Fhealth&label=Server%20Status&up_message=online&down_message=offline" alt="Server Status">
-                    <img src="https://img.shields.io/badge/MCP%20Protocol-2024--11--05-blue?logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIGZpbGw9IndoaXRlIi8+CiAgPHBhdGggZD0iTTEyIDJMMiA3VjE3TDEyIDIyTDIyIDE3VjdMMTIgMloiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4=" alt="MCP Protocol">
+                    <img src="https://img.shields.io/badge/MCP%20Protocol-2024--11--05-blue" alt="MCP Protocol">
                     <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License">
-                    <img src="https://img.shields.io/github/stars/KSAklfszf921/Riksdag-Regering.AI?style=social" alt="GitHub Stars">
                     <img src="https://img.shields.io/badge/TypeScript-5.0+-blue?logo=typescript" alt="TypeScript">
                     <img src="https://img.shields.io/badge/Node.js-20+-green?logo=node.js" alt="Node.js">
-                    <img src="https://img.shields.io/github/issues/KSAklfszf921/Riksdag-Regering.AI" alt="Issues">
-                    <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome">
                     <img src="https://img.shields.io/badge/Deploy-Render-46E3B7?logo=render" alt="Deploy">
                 </div>
             </div>
@@ -591,33 +574,22 @@
             <!-- Quick Links -->
             <div class="quick-links">
                 <a href="https://github.com/KSAklfszf921/Riksdag-Regering.AI#-snabbstart" class="quick-link">
-                    <div class="quick-link-icon">🚀</div>
                     <div class="quick-link-title">Kom Igång</div>
-                    <div class="quick-link-desc">Installera och anslut till MCP-servern via Claude Desktop, ChatGPT eller OpenAI Codex</div>
+                    <div class="quick-link-desc">Anslut via Claude Desktop, ChatGPT eller OpenAI Codex</div>
                 </a>
                 <a href="https://github.com/KSAklfszf921/Riksdag-Regering.AI#-funktioner" class="quick-link">
-                    <div class="quick-link-icon">🛠️</div>
                     <div class="quick-link-title">27 Verktyg</div>
                     <div class="quick-link-desc">Sök, analysera och jämför data från Riksdagen och Regeringskansliet</div>
                 </a>
-                <a href="https://github.com/KSAklfszf921/Riksdag-Regering.AI#-api-integrationer" class="quick-link">
-                    <div class="quick-link-icon">🔌</div>
-                    <div class="quick-link-title">API:er</div>
-                    <div class="quick-link-desc">Integration med Riksdagens öppna data och g0v.se regeringsdata</div>
-                </a>
                 <a href="https://github.com/KSAklfszf921/Riksdag-Regering.AI#-dokumentation" class="quick-link">
-                    <div class="quick-link-icon">📚</div>
                     <div class="quick-link-title">Dokumentation</div>
-                    <div class="quick-link-desc">Installation, användning, deployment och API-referens</div>
+                    <div class="quick-link-desc">Installation, användning och API-referens</div>
                 </a>
             </div>
 
             <!-- Documentation Section -->
             <div class="docs-section">
-                <div class="docs-header">
-                    <h2 class="docs-title">📖 Fullständig Dokumentation</h2>
-                    <button class="docs-refresh" onclick="refreshDocs()">↻ Uppdatera</button>
-                </div>
+                <h2 class="docs-title">Fullständig Dokumentation</h2>
 
                 <div id="content">
                     <div class="loading">
@@ -637,7 +609,6 @@
         <div class="footer-links">
             <a href="https://github.com/KSAklfszf921/Riksdag-Regering.AI" target="_blank">GitHub</a>
             <a href="https://github.com/KSAklfszf921/Riksdag-Regering.AI/issues" target="_blank">Rapportera Problem</a>
-            <a href="https://github.com/KSAklfszf921/Riksdag-Regering.AI/discussions" target="_blank">Diskussioner</a>
             <a href="/health" target="_blank">Server Health</a>
             <a href="https://modelcontextprotocol.io/" target="_blank">MCP Protocol</a>
         </div>
@@ -681,7 +652,7 @@
             const cached = sessionStorage.getItem('readme_content');
             if (cached) {
                 const data = JSON.parse(cached);
-                if (Date.now() - data.timestamp < 10 * 60 * 1000) { // 10 min cache
+                if (Date.now() - data.timestamp < 10 * 60 * 1000) {
                     contentEl.innerHTML = `<div class="content-card markdown-content">${data.html}</div>`;
                     return;
                 }
@@ -704,33 +675,18 @@
             } catch (error) {
                 contentEl.innerHTML = `
                     <div class="error">
-                        <strong>⚠️ Kunde inte ladda README från GitHub</strong>
+                        <strong>Kunde inte ladda README från GitHub</strong>
                         <p>${error.message}</p>
-                        <p>Försök <a href="javascript:location.reload()">ladda om sidan</a> eller besök
-                        <a href="https://github.com/KSAklfszf921/Riksdag-Regering.AI" target="_blank">GitHub-repot direkt</a>.</p>
+                        <p>Besök <a href="https://github.com/KSAklfszf921/Riksdag-Regering.AI" target="_blank">GitHub-repot direkt</a>.</p>
                     </div>
                 `;
             }
-        }
-
-        // Refresh documentation
-        function refreshDocs() {
-            sessionStorage.removeItem('readme_content');
-            document.getElementById('content').innerHTML = `
-                <div class="loading">
-                    <div class="loading-spinner"></div>
-                    <p class="loading-text">Laddar dokumentation från GitHub...</p>
-                </div>
-            `;
-            loadReadme();
         }
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             checkServerStatus();
             loadReadme();
-
-            // Refresh status every 30 seconds
             setInterval(checkServerStatus, 30000);
         });
     </script>
