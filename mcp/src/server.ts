@@ -181,6 +181,64 @@ function createApp() {
     }
   });
 
+  // SSE endpoint for streaming MCP protocol
+  app.get('/sse', (req, res) => {
+    // Set SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    // Send initial connection message
+    res.write(`data: ${JSON.stringify({ type: 'connected', timestamp: new Date().toISOString() })}\n\n`);
+
+    // Keep connection alive with periodic pings
+    const pingInterval = setInterval(() => {
+      res.write(`: ping\n\n`);
+    }, 30000);
+
+    // Cleanup on client disconnect
+    req.on('close', () => {
+      clearInterval(pingInterval);
+      logger.info('SSE client disconnected');
+    });
+  });
+
+  // POST endpoint for sending MCP requests via SSE
+  app.post('/sse', authenticateApiKey, async (req, res) => {
+    try {
+      const { method, params } = req.body;
+
+      if (!method) {
+        return res.status(400).json({ error: 'Method is required' });
+      }
+
+      // Route to appropriate MCP method
+      let result;
+      switch (method) {
+        case 'tools/list':
+          result = await mcpServer.request({ method: 'tools/list' }, ListToolsRequestSchema);
+          break;
+        case 'tools/call':
+          result = await mcpServer.request({ method: 'tools/call', params }, CallToolRequestSchema);
+          break;
+        case 'resources/list':
+          result = await mcpServer.request({ method: 'resources/list' }, ListResourcesRequestSchema);
+          break;
+        case 'resources/read':
+          result = await mcpServer.request({ method: 'resources/read', params }, ReadResourceRequestSchema);
+          break;
+        default:
+          return res.status(400).json({ error: `Unknown method: ${method}` });
+      }
+
+      res.json(result);
+    } catch (error) {
+      logger.error('Error processing SSE request:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   // 404 handler
   app.use((req, res) => {
     res.status(404).json({ error: 'Not found' });
@@ -214,6 +272,8 @@ async function main() {
       logger.info(`🔒 API Key authentication: ${API_KEY ? 'enabled' : 'disabled'}`);
       logger.info(`\nEndpoints:`);
       logger.info(`  GET  /health - Health check`);
+      logger.info(`  GET  /sse - SSE streaming endpoint`);
+      logger.info(`  POST /sse - Send MCP requests via SSE`);
       logger.info(`  POST /mcp/list-tools - List available tools`);
       logger.info(`  POST /mcp/call-tool - Call a tool`);
       logger.info(`  POST /mcp/list-resources - List available resources`);
