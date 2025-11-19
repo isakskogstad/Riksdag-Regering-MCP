@@ -3,16 +3,16 @@
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { validateTable } from './validation.js';
+
 
 let supabaseClient: SupabaseClient | null = null;
 
 /**
- * Initialisera Supabase client
+ * Initialisera Supabase client med connection pooling
  */
 export function initSupabase(): SupabaseClient {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = config.supabase.url;
+  const supabaseKey = config.supabase.anonKey || config.supabase.serviceRoleKey;
 
   if (!supabaseUrl || !supabaseKey) {
     throw new Error(
@@ -21,7 +21,22 @@ export function initSupabase(): SupabaseClient {
   }
 
   if (!supabaseClient) {
-    supabaseClient = createClient(supabaseUrl, supabaseKey);
+    supabaseClient = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: false, // Server-side, no session persistence
+        autoRefreshToken: false,
+      },
+      db: {
+        schema: 'public',
+      },
+      global: {
+        headers: {
+          'x-application-name': 'riksdag-regering-mcp',
+        },
+      },
+    });
+
+    logger.info('Supabase client initialized');
   }
 
   return supabaseClient;
@@ -38,13 +53,5 @@ export function getSupabase(): SupabaseClient {
 }
 
 /**
- * Säker query-builder som validerar tabellnamn
- * Detta säkerställer att endast data från Riksdagen och Regeringskansliet används
- */
-export function safeQuery(tableName: string) {
-  // Validera att tabellen är tillåten
-  validateTable(tableName);
 
-  const client = getSupabase();
-  return client.from(tableName);
 }
