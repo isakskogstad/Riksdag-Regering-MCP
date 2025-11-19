@@ -1,0 +1,38 @@
+{
+  "name": "@riksdag-regering/mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server för att hämta, söka, analysera och jämföra data från Riksdagen och Regeringskansliet",
+  "main": "dist/index.js",
+  "type": "module",
+  "bin": {
+    "riksdag-regering-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc && chmod +x dist/index.js",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "riksdagen",
+    "regeringen",
+    "swedish-government",
+    "parliament",
+    "model-context-protocol"
+  ],
+  "author": "Riksdag-Regering.AI",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "@supabase/supabase-js": "^2.78.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^22.16.5",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
