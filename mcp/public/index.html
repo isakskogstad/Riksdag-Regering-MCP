@@ -1,1 +1,695 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Riksdag & Regering MCP Server</title>
+    <meta name="description" content="Model Context Protocol server för Sveriges Riksdag och Regeringskansliet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>">
 
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #006AA7;
+            --accent-color: #007aff;
+            --success-color: #34c759;
+            --danger-color: #ff3b30;
+            --warning-color: #ff9500;
+            --text-primary: #1d1d1f;
+            --text-secondary: #86868b;
+            --bg-primary: #ffffff;
+            --bg-secondary: #fafafa;
+            --border-color: #d2d2d7;
+            --code-bg: #f5f5f7;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background-color: var(--bg-primary);
+            font-size: 15px;
+        }
+
+        /* Header */
+        header {
+            position: sticky;
+            top: 0;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 16px 0;
+            z-index: 100;
+        }
+
+        .header-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .logo-images {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .logo-images img {
+            height: 36px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .logo-text h1 {
+            font-size: 20px;
+            font-weight: 500;
+            line-height: 1.2;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--success-color);
+        }
+
+        .status-badge.checking .status-dot {
+            background: var(--warning-color);
+            animation: pulse 2s infinite;
+        }
+
+        .status-badge.offline .status-dot {
+            background: var(--danger-color);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .github-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            background: var(--text-primary);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+
+        .github-link:hover {
+            transform: translateY(-1px);
+            opacity: 0.9;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 60px 0 40px;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 42px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--primary-color);
+        }
+
+        .hero .subtitle {
+            font-size: 20px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+
+        .hero .description {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Badges Section */
+        .badges {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 40px;
+        }
+
+        .badges img {
+            height: 20px;
+            transition: transform 0.2s;
+        }
+
+        .badges img:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Quick Links */
+        .quick-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 60px;
+        }
+
+        .quick-link {
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            text-decoration: none;
+            color: var(--text-primary);
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .quick-link:hover {
+            background: white;
+            border-color: var(--border-color);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        .quick-link-title {
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .quick-link-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* Documentation Section */
+        .docs-section {
+            margin-top: 60px;
+            padding-top: 40px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .docs-title {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        /* Markdown Content */
+        .content-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 40px;
+            margin-bottom: 40px;
+        }
+
+        .markdown-content {
+            line-height: 1.8;
+            color: var(--text-primary);
+        }
+
+        .markdown-content h1,
+        .markdown-content h2,
+        .markdown-content h3,
+        .markdown-content h4 {
+            margin-top: 32px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            line-height: 1.25;
+        }
+
+        .markdown-content h1 {
+            font-size: 32px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 12px;
+        }
+
+        .markdown-content h2 {
+            font-size: 24px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        .markdown-content h3 {
+            font-size: 20px;
+        }
+
+        .markdown-content p {
+            margin-bottom: 16px;
+        }
+
+        .markdown-content ul,
+        .markdown-content ol {
+            margin-left: 28px;
+            margin-bottom: 16px;
+        }
+
+        .markdown-content li {
+            margin-bottom: 8px;
+        }
+
+        .markdown-content a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .markdown-content a:hover {
+            text-decoration: underline;
+        }
+
+        .markdown-content code {
+            background: var(--code-bg);
+            padding: 3px 6px;
+            border-radius: 6px;
+            font-family: 'SF Mono', Monaco, Menlo, 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        .markdown-content pre {
+            background: var(--code-bg);
+            padding: 20px;
+            border-radius: 12px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            border: 1px solid var(--border-color);
+        }
+
+        .markdown-content pre code {
+            background: none;
+            padding: 0;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .markdown-content blockquote {
+            border-left: 3px solid var(--border-color);
+            padding-left: 16px;
+            margin: 16px 0;
+            color: var(--text-secondary);
+        }
+
+        .markdown-content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+
+        .markdown-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+        }
+
+        .markdown-content th,
+        .markdown-content td {
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            text-align: left;
+        }
+
+        .markdown-content th {
+            background: var(--bg-secondary);
+            font-weight: 600;
+        }
+
+        .markdown-content hr {
+            height: 1px;
+            border: none;
+            background: var(--border-color);
+            margin: 32px 0;
+        }
+
+        .markdown-content details {
+            margin-bottom: 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .markdown-content summary {
+            cursor: pointer;
+            font-weight: 600;
+            user-select: none;
+        }
+
+        /* Badge Images in Markdown */
+        .markdown-content p img[src*="shields.io"],
+        .markdown-content p img[src*="badge"] {
+            display: inline-block;
+            margin: 0 4px 4px 0;
+            vertical-align: middle;
+            border-radius: 4px;
+        }
+
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: var(--text-secondary);
+            font-size: 15px;
+        }
+
+        /* Error State */
+        .error {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            color: #856404;
+        }
+
+        .error strong {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 17px;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 60px 24px;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            background: var(--bg-secondary);
+            margin-top: 80px;
+        }
+
+        footer p {
+            margin-bottom: 16px;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-size: 13px;
+        }
+
+        .footer-links a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-container {
+                padding: 0 16px;
+            }
+
+            .container {
+                padding: 0 16px;
+            }
+
+            .logo-images {
+                gap: 8px;
+            }
+
+            .logo-images img {
+                height: 28px;
+            }
+
+            .hero h1 {
+                font-size: 32px;
+            }
+
+            .hero .subtitle {
+                font-size: 18px;
+            }
+
+            .hero .description {
+                font-size: 15px;
+            }
+
+            .hero {
+                padding: 40px 0 30px;
+            }
+
+            .content-card {
+                padding: 24px;
+            }
+
+            .quick-links {
+                grid-template-columns: 1fr;
+            }
+
+            .badges {
+                gap: 6px;
+            }
+
+            .badges img {
+                height: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <a href="/" class="logo">
+                <div class="logo-images">
+                    <img src="https://mb.cision.com/Public/20518/3733746/9c8944283144c24f_800x800ar.png" alt="Riksdagen" title="Riksdagen">
+                    <img src="https://searchvectorlogo.com/wp-content/uploads/2020/02/regeringskansliet-logo-vector.png" alt="Regeringskansliet" title="Regeringskansliet">
+                </div>
+                <div class="logo-text">
+                    <h1>MCP Server</h1>
+                </div>
+            </a>
+            <div class="nav-right">
+                <div class="status-badge checking" id="status-badge">
+                    <span class="status-dot"></span>
+                    <span id="status-text">Kontrollerar...</span>
+                </div>
+                <a href="https://github.com/KSAklfszf921/Riksdag-Regering.AI" target="_blank" class="github-link">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+                    </svg>
+                    GitHub
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <!-- Hero Section -->
+            <div class="hero">
+                <h1>Riksdag & Regering MCP Server</h1>
+                <p class="subtitle">Model Context Protocol för svensk demokratidata</p>
+                <p class="description">
+                    <strong>Svenska:</strong> En MCP-server som ger AI-assistenter tillgång till Sveriges Riksdags- och Regeringskansliets öppna data.<br><br>
+                    <strong>English:</strong> An MCP server providing AI assistants with access to Swedish Parliament and Government open data.
+                </p>
+
+                <!-- Badges -->
+                <div class="badges">
+                    <img src="https://img.shields.io/website?url=https%3A%2F%2Friksdag-regering-ai.onrender.com%2Fhealth&label=Server%20Status&up_message=online&down_message=offline" alt="Server Status">
+                    <img src="https://img.shields.io/npm/v/riksdag-regering-mcp?logo=npm" alt="npm version">
+                    <img src="https://img.shields.io/badge/MCP%20Protocol-2024--11--05-blue" alt="MCP Protocol">
+                    <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License">
+                    <img src="https://img.shields.io/badge/TypeScript-5.0+-blue?logo=typescript" alt="TypeScript">
+                    <img src="https://img.shields.io/badge/Node.js-20+-green?logo=node.js" alt="Node.js">
+                    <img src="https://img.shields.io/badge/Deploy-Render-46E3B7?logo=render" alt="Deploy">
+                </div>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="quick-links">
+                <a href="https://github.com/KSAklfszf921/Riksdag-Regering.AI#-snabbstart" class="quick-link">
+                    <div class="quick-link-title">Kom Igång</div>
+                    <div class="quick-link-desc">Anslut via Claude Desktop, ChatGPT eller OpenAI Codex</div>
+                </a>
+                <a href="https://github.com/KSAklfszf921/Riksdag-Regering.AI#-funktioner" class="quick-link">
+                    <div class="quick-link-title">27 Verktyg</div>
+                    <div class="quick-link-desc">Sök, analysera och jämför data från Riksdagen och Regeringskansliet</div>
+                </a>
+                <a href="https://github.com/KSAklfszf921/Riksdag-Regering.AI#-dokumentation" class="quick-link">
+                    <div class="quick-link-title">Dokumentation</div>
+                    <div class="quick-link-desc">Installation, användning och API-referens</div>
+                </a>
+            </div>
+
+            <!-- Documentation Section -->
+            <div class="docs-section">
+                <h2 class="docs-title">Fullständig Dokumentation</h2>
+
+                <div id="content">
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        <p class="loading-text">Laddar dokumentation från GitHub...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>
+            <strong>Riksdag & Regering MCP Server</strong> v2.0.0<br>
+            En öppen MCP-server för svensk demokratidata
+        </p>
+        <div class="footer-links">
+            <a href="https://github.com/KSAklfszf921/Riksdag-Regering.AI" target="_blank">GitHub</a>
+            <a href="https://github.com/KSAklfszf921/Riksdag-Regering.AI/issues" target="_blank">Rapportera Problem</a>
+            <a href="/health" target="_blank">Server Health</a>
+            <a href="https://modelcontextprotocol.io/" target="_blank">MCP Protocol</a>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        const GITHUB_README_URL = 'https://raw.githubusercontent.com/KSAklfszf921/Riksdag-Regering.AI/main/README.md';
+
+        // Check server status
+        async function checkServerStatus() {
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+
+                const badge = document.getElementById('status-badge');
+                const statusText = document.getElementById('status-text');
+
+                if (data.status === 'ok') {
+                    badge.classList.remove('checking', 'offline');
+                    statusText.textContent = 'Online';
+                } else {
+                    badge.classList.remove('checking');
+                    badge.classList.add('offline');
+                    statusText.textContent = 'Offline';
+                }
+            } catch (error) {
+                const badge = document.getElementById('status-badge');
+                const statusText = document.getElementById('status-text');
+                badge.classList.remove('checking');
+                badge.classList.add('offline');
+                statusText.textContent = 'Offline';
+            }
+        }
+
+        // Load and render README
+        async function loadReadme() {
+            const contentEl = document.getElementById('content');
+
+            // Check session storage cache
+            const cached = sessionStorage.getItem('readme_content');
+            if (cached) {
+                const data = JSON.parse(cached);
+                if (Date.now() - data.timestamp < 10 * 60 * 1000) {
+                    contentEl.innerHTML = `<div class="content-card markdown-content">${data.html}</div>`;
+                    return;
+                }
+            }
+
+            try {
+                const response = await fetch(GITHUB_README_URL);
+                if (!response.ok) throw new Error('Failed to load README');
+
+                const markdown = await response.text();
+                const html = marked.parse(markdown);
+
+                // Cache the result
+                sessionStorage.setItem('readme_content', JSON.stringify({
+                    html,
+                    timestamp: Date.now()
+                }));
+
+                contentEl.innerHTML = `<div class="content-card markdown-content">${html}</div>`;
+            } catch (error) {
+                contentEl.innerHTML = `
+                    <div class="error">
+                        <strong>Kunde inte ladda README från GitHub</strong>
+                        <p>${error.message}</p>
+                        <p>Besök <a href="https://github.com/KSAklfszf921/Riksdag-Regering.AI" target="_blank">GitHub-repot direkt</a>.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            checkServerStatus();
+            loadReadme();
+            setInterval(checkServerStatus, 30000);
+        });
+    </script>
+</body>
+</html>
