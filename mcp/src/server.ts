@@ -98,15 +98,21 @@ function createApp() {
 
   // Helper to call MCP handlers directly (no connection needed for HTTP mode)
   async function callMCPHandler(method: string, params?: any) {
+    // Construct proper MCP request object
+    const request = {
+      method,
+      params: params || {}
+    };
+
     switch (method) {
       case 'tools/list':
-        return mcpServer['_requestHandlers'].get('tools/list')?.(params || {});
+        return mcpServer['_requestHandlers'].get('tools/list')?.(request);
       case 'tools/call':
-        return mcpServer['_requestHandlers'].get('tools/call')?.(params);
+        return mcpServer['_requestHandlers'].get('tools/call')?.(request);
       case 'resources/list':
-        return mcpServer['_requestHandlers'].get('resources/list')?.(params || {});
+        return mcpServer['_requestHandlers'].get('resources/list')?.(request);
       case 'resources/read':
-        return mcpServer['_requestHandlers'].get('resources/read')?.(params);
+        return mcpServer['_requestHandlers'].get('resources/read')?.(request);
       default:
         throw new Error(`Unknown method: ${method}`);
     }
@@ -229,7 +235,7 @@ function createApp() {
           break;
 
         case 'tools/call':
-          result = await callMCPHandler('tools/call', { params });
+          result = await callMCPHandler('tools/call', params);
           break;
 
         case 'resources/list':
@@ -244,7 +250,7 @@ function createApp() {
           break;
 
         case 'resources/read':
-          result = await callMCPHandler('resources/read', { params });
+          result = await callMCPHandler('resources/read', params);
           break;
 
         default:
