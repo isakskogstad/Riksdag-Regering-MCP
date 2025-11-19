@@ -52,6 +52,9 @@ const API_KEY = process.env.API_KEY; // Optional API key for authentication
 function createApp() {
   const app = express();
 
+  // Trust proxy - required for Render.com and rate limiting
+  app.set('trust proxy', 1);
+
   // Middleware
   app.use(cors());
   app.use(express.json({ limit: '10mb' }));
@@ -92,6 +95,22 @@ function createApp() {
 
   // MCP Server instance - använd gemensam konfiguration med logger
   const mcpServer = createMCPServer(logger);
+
+  // Helper to call MCP handlers directly (no connection needed for HTTP mode)
+  async function callMCPHandler(method: string, params?: any) {
+    switch (method) {
+      case 'tools/list':
+        return mcpServer['_requestHandlers'].get('tools/list')?.(params || {});
+      case 'tools/call':
+        return mcpServer['_requestHandlers'].get('tools/call')?.(params);
+      case 'resources/list':
+        return mcpServer['_requestHandlers'].get('resources/list')?.(params || {});
+      case 'resources/read':
+        return mcpServer['_requestHandlers'].get('resources/read')?.(params);
+      default:
+        throw new Error(`Unknown method: ${method}`);
+    }
+  }
 
   // MCP endpoints
   app.post('/mcp/list-tools', authenticateApiKey, async (req, res) => {
@@ -204,13 +223,13 @@ function createApp() {
           if (cachedTools) {
             result = cachedTools;
           } else {
-            result = await mcpServer.request({ method: 'tools/list' }, ListToolsRequestSchema);
+            result = await callMCPHandler('tools/list');
             cache.set(toolsCacheKey, result);
           }
           break;
 
         case 'tools/call':
-          result = await mcpServer.request({ method: 'tools/call', params }, CallToolRequestSchema);
+          result = await callMCPHandler('tools/call', { params });
           break;
 
         case 'resources/list':
@@ -219,13 +238,13 @@ function createApp() {
           if (cachedResources) {
             result = cachedResources;
           } else {
-            result = await mcpServer.request({ method: 'resources/list' }, ListResourcesRequestSchema);
+            result = await callMCPHandler('resources/list');
             cache.set(resourcesCacheKey, result);
           }
           break;
 
         case 'resources/read':
-          result = await mcpServer.request({ method: 'resources/read', params }, ReadResourceRequestSchema);
+          result = await callMCPHandler('resources/read', { params });
           break;
 
         default:
