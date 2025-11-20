@@ -65,7 +65,7 @@ export const searchDokumentSchema = z.object({
   limit: z.number().optional().default(50).describe('Max antal resultat'),
 });
 
-export async function searchDokument(args: z.infer<typeof searchDokumentSchema>) {
+export async function searchDokument(args: z.infer<typeof searchDokumentSchema>, log?: (text: string) => Promise<void>) {
   const supabase = getSupabase();
 
   let query = supabase
@@ -104,9 +104,26 @@ export async function searchDokument(args: z.infer<typeof searchDokumentSchema>)
     throw new Error(`Fel vid sökning av dokument: ${error.message}`);
   }
 
+  const dokument = data || [];
+
+  if (log) {
+    await log(`📄 Hittade ${dokument.length} dokument`);
+  }
+
+  const chunkSize = 20;
+  const chunks = [];
+  for (let i = 0; i < dokument.length; i += chunkSize) {
+    const chunk = dokument.slice(i, i + chunkSize);
+    chunks.push({
+      type: 'text' as const,
+      text: JSON.stringify({ chunk: i / chunkSize + 1, items: chunk }),
+    });
+  }
+
   return {
-    count: data?.length || 0,
-    dokument: data || [],
+    count: dokument.length,
+    dokument,
+    chunks,
   };
 }
 

@@ -249,13 +249,15 @@ const TOOL_DEFINITIONS = [
 /**
  * Tool handler - kopplar verktygsnamn till funktioner
  */
-async function handleToolCall(name: string, args: any) {
+async function handleToolCall(name: string, args: any, logger?: { sendLog?: (text: string) => Promise<void> }) {
+  const sendLog = logger?.sendLog;
   switch (name) {
     // Search tools
     case 'search_ledamoter':
       return await searchLedamoter(args);
     case 'search_dokument':
-      return await searchDokument(args);
+      await sendLog?.('🔎 Hämtar dokument…');
+      return await searchDokument(args, sendLog);
     case 'search_anforanden':
       return await searchAnforanden(args);
     case 'search_voteringar':
@@ -368,7 +370,12 @@ export function createMCPServer(logger?: { error: (msg: string, ...args: any[]) 
 
     const start = Date.now();
     try {
-      const result = await handleToolCall(name, args as any);
+      const logMessages: string[] = [];
+      const result = await handleToolCall(name, args as any, {
+        sendLog: async (text: string) => {
+          logMessages.push(text);
+        },
+      });
 
       logToolCall({
         tool_name: name,
@@ -377,13 +384,31 @@ export function createMCPServer(logger?: { error: (msg: string, ...args: any[]) 
         args: args as Record<string, unknown>,
       }).catch(() => {});
 
+      (result as any).meta = {
+        ...(result as any).meta,
+        duration_ms: Date.now() - start,
+      };
+
+      const contentBlocks: { type: 'text'; text: string }[] = [];
+      if (logMessages.length > 0) {
+        for (const message of logMessages) {
+          contentBlocks.push({ type: 'text', text: message });
+        }
+      }
+
+      if ((result as any)?.chunks) {
+        const chunks = (result as any).chunks;
+        delete (result as any).chunks;
+        contentBlocks.push(...chunks);
+      }
+
+      contentBlocks.push({
+        type: 'text',
+        text: JSON.stringify(result, null, 2),
+      });
+
       return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(result, null, 2),
-          },
-        ],
+        content: contentBlocks,
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -407,14 +432,11 @@ export function createMCPServer(logger?: { error: (msg: string, ...args: any[]) 
         content: [
           {
             type: 'text',
-            text: JSON.stringify(
-              {
-                error: errorMessage,
-                tool: name,
-              },
-              null,
-              2
-            ),
+            text: JSON.stringify({
+              error: errorMessage,
+              tool: name,
+              tip: 'Kör get_data_dictionary eller docs://workflow-guide för mer kontext.',
+            }, null, 2),
           },
         ],
         isError: true,

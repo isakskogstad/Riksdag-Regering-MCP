@@ -5,6 +5,8 @@
 import { getSupabase } from '../utils/supabase.js';
 import { DATA_DICTIONARY } from '../data/dictionary.js';
 import { WORKFLOW_GUIDE } from '../data/workflow.js';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 /**
  * Hämta lista över alla tillgängliga resources
@@ -52,6 +54,12 @@ export async function listResources() {
       name: 'Processguide',
       description: 'Steg-för-steg hur propositioner blir betänkanden, anföranden och voteringar',
       mimeType: 'application/json',
+    },
+    {
+      uri: 'docs://readme',
+      name: 'README',
+      description: 'Renderad README direkt från GitHub-repot',
+      mimeType: 'text/markdown',
     },
   ];
 }
@@ -251,6 +259,15 @@ export async function getResource(uri: string) {
         uri,
         mimeType: 'application/json',
         text: JSON.stringify(WORKFLOW_GUIDE, null, 2),
+      };
+    }
+    case 'docs://readme': {
+      const readmePath = path.join(process.cwd(), 'README.md');
+      const markdown = await fs.readFile(readmePath, 'utf-8');
+      return {
+        uri,
+        mimeType: 'text/markdown',
+        text: markdown,
       };
     }
 
