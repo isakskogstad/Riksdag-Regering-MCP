@@ -78,7 +78,17 @@ export async function fetchRiksdagenDokument(dokId: string): Promise<any | null>
   }
 
   const json: any = await response.json();
-  return json?.dokgrupp?.dokument?.[0] ?? null;
+  const doc = json?.dokgrupp?.dokument?.[0] ?? null;
+  if (!doc) return null;
+  const text =
+    doc?.dokumentstatus?.dokument?.dokumenttext ||
+    doc?.dokumentstatus?.dokument?.dokutskrift ||
+    doc?.dokumenttext ||
+    '';
+  return {
+    ...doc,
+    text,
+  };
 }
 
 export async function saveJsonToStorage(bucket: string, path: string, payload: unknown) {

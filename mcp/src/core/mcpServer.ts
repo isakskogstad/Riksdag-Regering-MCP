@@ -63,6 +63,10 @@ import {
   globalSearch, globalSearchSchema,
 } from '../tools/aggregate.js';
 import {
+  getPressmeddelande, getPressmeddelandeSchema,
+  getDokumentInnehall, getDokumentInnehallSchema,
+} from '../tools/content.js';
+import {
   getVoteringRosterSummary,
   getVoteringRosterSummarySchema,
   summarizePressmeddelande,
@@ -222,6 +226,16 @@ const TOOL_DEFINITIONS = [
     description: 'Sök över alla tabeller (dokument, anföranden, ledamöter, pressmeddelanden)',
     inputSchema: globalSearchSchema,
   },
+  {
+    name: 'get_pressmeddelande',
+    description: 'Returnera pressmeddelande med fulltext och sammanfattning',
+    inputSchema: getPressmeddelandeSchema,
+  },
+  {
+    name: 'get_dokument_innehall',
+    description: 'Returnera riksdagens dokument med fulltext (cacha lokalt)',
+    inputSchema: getDokumentInnehallSchema,
+  },
 
   // INSIGHTS
   {
@@ -316,6 +330,10 @@ async function handleToolCall(name: string, args: any, logger?: { sendLog?: (tex
       return await getTopLists(args);
     case 'global_search':
       return await globalSearch(args);
+    case 'get_pressmeddelande':
+      return await getPressmeddelande(args);
+    case 'get_dokument_innehall':
+      return await getDokumentInnehall(args, sendLog);
 
     // Insights
     case 'get_votering_roster_summary':
