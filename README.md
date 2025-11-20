@@ -7,7 +7,9 @@
 [![MCP Protocol](https://img.shields.io/badge/MCP%20Protocol-2024--11--05-blue?logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIGZpbGw9IndoaXRlIi8+CiAgPHBhdGggZD0iTTEyIDJMMiA3VjE3TDEyIDIyTDIyIDE3VjdMMTIgMloiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4=)](https://modelcontextprotocol.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-En MCP-server som ger LLMs möjlighet att söka, hitta och extrahera öppen data och information från Riksdagen och Regeringskansliet. Ansluten till samtliga öppna API:er från Riksdagen och nyttjar g0v.se för att tillgå data från Regeringskansliet. Skapad av Isak Skogstad. 
+🇺🇸 Open-source MCP-server for local self-hosting or remote deployment. Enables LLMs to query and retrieve real-time open data, documents, protocols, and records from accessible API:s and open databases from the Parliament and Government Offices of Sweden.
+
+🇸🇪 MCP-server som ger LLMs möjlighet att söka, hitta och extrahera öppen data och information från Riksdagen och Regeringskansliet. Ansluten till samtliga öppna API:er från Riksdagen och nyttjar g0v.se för att tillgå data från Regeringskansliet. 
 
 ---
 
@@ -157,7 +159,7 @@ npm start
 
 ### 📊 27 Verktyg
 
-Servern erbjuder 27 specialiserade verktyg organiserade i 5 kategorier:
+Servern erbjuder drygt 35 olika verktyg som kan fördelas i 5 kategorier. Här här några exempel:
 
 **Sökverktyg (5)**
 - `search_ledamoter` - Sök ledamöter efter namn, parti, valkrets
@@ -186,18 +188,13 @@ Servern erbjuder 27 specialiserade verktyg organiserade i 5 kategorier:
 - `get_ledamot` - Fullständig ledamotsprofil med uppdrag
 - `get_dokument` - Komplett dokumentinformation
 - `get_motioner` - Hämta motioner från riksdagen
-- `get_propositioner` - Hämta propositioner
-- `get_betankanden` - Hämta utskottsbetänkanden
-- `get_utskott` - Lista alla riksdagens utskott
 
-### 📦 4 Resurser
+###  4 Resurser
 
 Strukturerad referensdata tillgänglig via `resources/list`:
 
 - `riksdagen://ledamoter` - Alla nuvarande riksdagsledamöter
 - `riksdagen://partier` - Översikt över politiska partier
-- `riksdagen://dokument/typer` - Dokumenttypsreferens
-- `regeringen://departement` - Regeringsdepartement
 
 ### 📝 5 Promptmallar
 
@@ -211,44 +208,24 @@ Färdiga mallar för vanliga uppgifter via `prompts/list`:
 
 ---
 
-## 🔌 API-integrationer
-
-Servern kopplar till tre av Sveriges viktigaste öppna data-API:er:
-
-**Riksdagens Öppna Data API** ([data.riksdagen.se](https://data.riksdagen.se/))
-Tillgång till läroplaner (LGR11, GY11), ämnen, kurser och gymnasieprogram. API:et täcker Sveriges kompletta utbildningssystem från grundskola till gymnasiet.
-
-**g0v.se Regeringskansliets Data** ([g0v.se](https://g0v.se/))
-Aggregerad data från regeringskansliet inklusive pressmeddelanden, propositioner, SOU-betänkanden, direktiv och departementsserier.
-
-**Supabase Real-time Database**
-Cachad och optimerad datalagring med real-time uppdateringar. Snabb åtkomst till 48 tabeller med över 500,000 poster.
-
----
-
 ## 📖 Användningsområden
 
 ### För policynörden
 - Spåra voteringsmönster över partier
 - Analysera ledamöters aktivitet och engagemang
 
-
 ### För den nyfikkne
 - Korsreferera riksdags- och regeringsdokument
 - Hitta relevanta anföranden och debatter
-- Identifiera mest aktiva ledamöter inom specifika frågor
 
 ### För konspiratören
 - Tidsserieanalys av parlamentarisk aktivitet
 - Partijämförelser och koalitionsanalys
-- Dokumentpåverkansanalys
 
 ### För vibekodaren
 - Utöka LLM:er med svensk politisk data
 - Bygg konversationsgränssnitt för medborgardata
-- Automatisera politisk rapportering
 
----
 ---
 
 
