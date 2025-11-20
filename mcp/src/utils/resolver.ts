@@ -43,6 +43,14 @@ export async function resolveData<T>(options: ResolverOptions<T>): Promise<{ dat
     }
   }
 
+  if (!canUseLiveFetch()) {
+    return {
+      data: null,
+      source: 'supabase',
+      fetchedAt: new Date().toISOString(),
+    };
+  }
+
   const liveData = await fallbackApi();
   if (liveData && persist) {
     try {
@@ -83,4 +91,19 @@ export async function saveJsonToStorage(bucket: string, path: string, payload: u
   } catch (error) {
     console.warn(`Kunde inte spara data i bucket ${bucket}:`, (error as Error).message);
   }
+}
+const maxLiveFetches = parseInt(process.env.MAX_LIVE_FETCHES_PER_MINUTE || '30', 10);
+const liveFetchWindowMs = 60_000;
+const liveFetchHistory: number[] = [];
+
+function canUseLiveFetch() {
+  const now = Date.now();
+  while (liveFetchHistory.length && now - liveFetchHistory[0] > liveFetchWindowMs) {
+    liveFetchHistory.shift();
+  }
+  if (liveFetchHistory.length >= maxLiveFetches) {
+    return false;
+  }
+  liveFetchHistory.push(now);
+  return true;
 }

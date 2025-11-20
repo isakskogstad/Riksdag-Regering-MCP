@@ -40,4 +40,15 @@ export async function logToolCall(payload: ToolLogPayload): Promise<void> {
 
 export async function logDataMiss(payload: DataMissPayload): Promise<void> {
   await insertAdminLog('mcp_data_miss', payload);
+  try {
+    const supabase = getSupabase();
+    await supabase.from('data_sync_queue').insert({
+      entity: payload.entity,
+      identifier: payload.identifier,
+      reason: payload.reason || 'unknown',
+      status: 'pending',
+    });
+  } catch (error) {
+    console.warn('Kunde inte lägga till post i data_sync_queue:', (error as Error).message);
+  }
 }

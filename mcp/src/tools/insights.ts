@@ -115,7 +115,7 @@ export async function getSyncStatus() {
   return withCache('sync_status', async () => {
     const supabase = getSupabase();
 
-    const [{ data: riksdagLog }, { data: regeringsLog }] = await Promise.all([
+    const [{ data: riksdagLog }, { data: regeringsLog }, { data: storageStats }] = await Promise.all([
       supabase
         .from('riksdagen_api_log')
         .select('endpoint, status, antal_poster, felmeddelande, created_at')
@@ -125,6 +125,11 @@ export async function getSyncStatus() {
         .from('regeringskansliet_api_log')
         .select('endpoint, status, created_at, felmeddelande')
         .order('created_at', { ascending: false })
+        .limit(5),
+      supabase
+        .from('storage_statistics')
+        .select('*')
+        .order('updated_at', { ascending: false })
         .limit(5),
     ]);
 
@@ -140,6 +145,7 @@ export async function getSyncStatus() {
     return {
       riksdagen: summarizeLog(riksdagLog ?? []),
       regeringskansliet: summarizeLog(regeringsLog ?? []),
+      storage: storageStats || [],
       generated_at: new Date().toISOString(),
     };
   }, 300);

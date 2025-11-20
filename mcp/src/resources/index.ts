@@ -4,6 +4,7 @@
 
 import { getSupabase } from '../utils/supabase.js';
 import { DATA_DICTIONARY } from '../data/dictionary.js';
+import { WORKFLOW_GUIDE } from '../data/workflow.js';
 
 /**
  * Hämta lista över alla tillgängliga resources
@@ -44,6 +45,12 @@ export async function listResources() {
       uri: 'docs://data-dictionary',
       name: 'Begrepp och dataprodukter',
       description: 'Definitioner, instruktioner och fältbeskrivningar för alla dataset i MCP-servern',
+      mimeType: 'application/json',
+    },
+    {
+      uri: 'docs://workflow-guide',
+      name: 'Processguide',
+      description: 'Steg-för-steg hur propositioner blir betänkanden, anföranden och voteringar',
       mimeType: 'application/json',
     },
   ];
@@ -236,6 +243,14 @@ export async function getResource(uri: string) {
         uri,
         mimeType: 'application/json',
         text: JSON.stringify(DATA_DICTIONARY, null, 2),
+      };
+    }
+
+    case 'docs://workflow-guide': {
+      return {
+        uri,
+        mimeType: 'application/json',
+        text: JSON.stringify(WORKFLOW_GUIDE, null, 2),
       };
     }
 

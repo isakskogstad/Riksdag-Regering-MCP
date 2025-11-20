@@ -19,6 +19,7 @@ import NodeCache from 'node-cache';
 
 import { initSupabase } from './utils/supabase.js';
 import { createMCPServer } from './core/mcpServer.js';
+import { getSyncStatus } from './tools/insights.js';
 
 // Configure logging
 const logger = winston.createLogger({
@@ -84,12 +85,26 @@ function createApp() {
   };
 
   // Health check endpoint
-  app.get('/health', (req, res) => {
+  app.get('/health', async (req, res) => {
+    let syncSummary: any = null;
+    try {
+      const status = await getSyncStatus();
+      syncSummary = {
+        generated_at: status.generated_at,
+        riksdagen_latest: status.riksdagen.latest?.created_at ?? null,
+        regeringskansliet_latest: status.regeringskansliet.latest?.created_at ?? null,
+        pending_failures: (status.riksdagen.failures.length + status.regeringskansliet.failures.length),
+      };
+    } catch {
+      syncSummary = null;
+    }
+
     res.json({
       status: 'ok',
       service: 'riksdag-regering-mcp',
       version: '2.0.0',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      sync: syncSummary,
     });
   });
 

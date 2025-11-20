@@ -4,6 +4,7 @@
 
 import { getSupabase } from '../utils/supabase.js';
 import { z } from 'zod';
+import fetch from 'node-fetch';
 import { resolveData, fetchRiksdagenDokument, saveJsonToStorage } from '../utils/resolver.js';
 import { logDataMiss } from '../utils/telemetry.js';
 
@@ -79,13 +80,46 @@ export const getLedamotSchema = z.object({
 export async function getLedamot(args: z.infer<typeof getLedamotSchema>) {
   const supabase = getSupabase();
 
-  const { data: ledamot, error } = await supabase
-    .from('riksdagen_ledamoter')
-    .select('*')
-    .eq('intressent_id', args.intressent_id)
-    .single();
+  const { data: ledamot, source, fetchedAt } = await resolveData({
+    supabaseQuery: async () => {
+      const { data, error } = await supabase
+        .from('riksdagen_ledamoter')
+        .select('*')
+        .eq('intressent_id', args.intressent_id)
+        .single();
 
-  if (error || !ledamot) {
+      if (error) return null;
+      return data || null;
+    },
+    fallbackApi: async () => {
+      const response = await fetch(`https://data.riksdagen.se/personlista/?iid=${args.intressent_id}&utformat=json`);
+      const json = await response.json();
+      const person = json?.personlista?.person?.[0];
+      if (!person) return null;
+      return {
+        intressent_id: person.intressent_id,
+        tilltalsnamn: person.tilltalsnamn,
+        fornamn: person.fornamn,
+        efternamn: person.efternamn,
+        parti: person.parti,
+        valkrets: person.valkrets,
+        status: person.status,
+        bild_url: person.bild_url,
+      };
+    },
+    persist: async (data) => {
+      await supabase.from('riksdagen_ledamoter').upsert(data, { onConflict: 'intressent_id' });
+    },
+    onMiss: async () => {
+      await logDataMiss({
+        entity: 'riksdagen_ledamoter',
+        identifier: args.intressent_id,
+        reason: 'saknas i supabase',
+      });
+    },
+  });
+
+  if (!ledamot) {
     throw new Error(`Ledamot med ID ${args.intressent_id} hittades inte`);
   }
 
@@ -102,6 +136,8 @@ export async function getLedamot(args: z.infer<typeof getLedamotSchema>) {
     ledamot,
     uppdrag: uppdrag || [],
     summary: `${namn ? `${namn} ` : ''}${ledamot.efternamn} (${ledamot.parti}), ${ledamot.valkrets || 'okänd valkrets'}`,
+    source,
+    fetchedAt,
   };
 }
 
