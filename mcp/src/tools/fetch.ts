@@ -4,6 +4,7 @@
 
 import { getSupabase } from '../utils/supabase.js';
 import { z } from 'zod';
+import { resolveData, fetchRiksdagenDokument } from '../utils/resolver.js';
 
 /**
  * Hämta ett specifikt dokument med alla detaljer
@@ -15,23 +16,47 @@ export const getDokumentSchema = z.object({
 export async function getDokument(args: z.infer<typeof getDokumentSchema>) {
   const supabase = getSupabase();
 
-  const { data: dokument, error } = await supabase
-    .from('riksdagen_dokument')
-    .select('*')
-    .eq('dok_id', args.dok_id)
-    .single();
+  const { data, source, fetchedAt } = await resolveData({
+    supabaseQuery: async () => {
+      const { data, error } = await supabase
+        .from('riksdagen_dokument')
+        .select('*')
+        .eq('dok_id', args.dok_id)
+        .single();
 
-  if (error) {
-    throw new Error(`Fel vid hämtning av dokument: ${error.message}`);
-  }
+      if (error) {
+        return null;
+      }
+      return data || null;
+    },
+    fallbackApi: async () => {
+      return await fetchRiksdagenDokument(args.dok_id);
+    },
+    persist: async (liveData) => {
+      const mapped = {
+        dok_id: liveData.dok_id,
+        doktyp: liveData.doktyp,
+        rm: liveData.rm,
+        beteckning: liveData.beteckning,
+        datum: liveData.datum,
+        titel: liveData.titel,
+        organ: liveData.organ,
+      };
+      await supabase.from('riksdagen_dokument').upsert(mapped, { onConflict: 'dok_id' });
+    },
+  });
 
-  if (!dokument) {
+  if (!data) {
     throw new Error(`Dokument med ID ${args.dok_id} hittades inte`);
   }
+
+  const dokument = data;
 
   return {
     dokument,
     summary: `${dokument.doktyp} ${dokument.beteckning}: ${dokument.titel}`,
+    source,
+    fetchedAt,
   };
 }
 
