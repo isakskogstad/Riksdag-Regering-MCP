@@ -25,7 +25,8 @@ export async function searchLedamoter(args: z.infer<typeof searchLedamoterSchema
     .limit(args.limit || 50);
 
   if (args.namn) {
-    query = query.or(`fornamn.ilike.%${args.namn}%,efternamn.ilike.%${args.namn}%,tilltalsnamn.ilike.%${args.namn}%`);
+    // FIX: fornamn finns inte i API - använd bara tilltalsnamn och efternamn
+    query = query.or(`tilltalsnamn.ilike.%${args.namn}%,efternamn.ilike.%${args.namn}%`);
   }
 
   if (args.parti) {
@@ -79,7 +80,8 @@ export async function searchDokument(args: z.infer<typeof searchDokumentSchema>)
   }
 
   if (args.doktyp) {
-    query = query.eq('doktyp', args.doktyp);
+    // FIX: Case-insensitive sökning - API använder lowercase
+    query = query.eq('doktyp', args.doktyp.toLowerCase());
   }
 
   if (args.rm) {
@@ -130,7 +132,7 @@ export async function searchAnforanden(args: z.infer<typeof searchAnforandenSche
     .from('riksdagen_anforanden')
     .select('*')
     .limit(args.limit || 50)
-    .order('anfdatum', { ascending: false });
+    .order('systemdatum', { ascending: false }); // FIX: anfdatum → systemdatum
 
   if (args.talare) {
     query = query.ilike('talare', `%${args.talare}%`);
@@ -141,19 +143,23 @@ export async function searchAnforanden(args: z.infer<typeof searchAnforandenSche
   }
 
   if (args.debattnamn) {
-    query = query.ilike('debattnamn', `%${args.debattnamn}%`);
+    // FIX: debattnamn finns inte - använd avsnittsrubrik
+    query = query.ilike('avsnittsrubrik', `%${args.debattnamn}%`);
   }
 
   if (args.text) {
-    query = query.ilike('anftext', `%${args.text}%`);
+    // FIX: anftext → anforandetext
+    query = query.ilike('anforandetext', `%${args.text}%`);
   }
 
   if (args.from_date) {
-    query = query.gte('anfdatum', args.from_date);
+    // FIX: anfdatum → dok_datum
+    query = query.gte('dok_datum', args.from_date);
   }
 
   if (args.to_date) {
-    query = query.lte('anfdatum', args.to_date);
+    // FIX: anfdatum → dok_datum
+    query = query.lte('dok_datum', args.to_date);
   }
 
   const { data, error } = await query;
@@ -186,10 +192,11 @@ export async function searchVoteringar(args: z.infer<typeof searchVoteringarSche
     .from('riksdagen_voteringar')
     .select('*')
     .limit(args.limit || 50)
-    .order('votering_datum', { ascending: false });
+    .order('systemdatum', { ascending: false }); // FIX: votering_datum → systemdatum
 
+  // FIX: titel finns inte i API - ta bort eller använd beteckning istället
   if (args.titel) {
-    query = query.ilike('titel', `%${args.titel}%`);
+    query = query.ilike('beteckning', `%${args.titel}%`);
   }
 
   if (args.rm) {
@@ -197,11 +204,13 @@ export async function searchVoteringar(args: z.infer<typeof searchVoteringarSche
   }
 
   if (args.from_date) {
-    query = query.gte('votering_datum', args.from_date);
+    // FIX: votering_datum → systemdatum
+    query = query.gte('systemdatum', args.from_date);
   }
 
   if (args.to_date) {
-    query = query.lte('votering_datum', args.to_date);
+    // FIX: votering_datum → systemdatum
+    query = query.lte('systemdatum', args.to_date);
   }
 
   const { data, error } = await query;
