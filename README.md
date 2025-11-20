@@ -236,4 +236,4 @@ MIT License - Se [LICENSE](LICENSE) för detaljer.
 ### Kontakt
 - **Email:** [isak.skogstad@me.com](mailto:isak.skogstad@me.com)
 
-**Version 2.0.0** | MCP JSON-RPC 2.0 | Remote HTTP Support | 27 Tools | 4 Resources | 5 Prompts
+**Version 2.0.0** | MCP JSON-RPC 2.0 | Remote HTTP Support | 27 Tools | 4 Resources | 5 Prompts [![MCP Badge](https://lobehub.com/badge/mcp/ksaklfszf921-riksdag-regering-ai)](https://lobehub.com/mcp/ksaklfszf921-riksdag-regering-ai)
