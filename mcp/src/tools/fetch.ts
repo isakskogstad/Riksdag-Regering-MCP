@@ -62,10 +62,12 @@ export async function getLedamot(args: z.infer<typeof getLedamotSchema>) {
     .eq('intressent_id', args.intressent_id)
     .order('uppdrag_fran', { ascending: false });
 
+  const namn = (ledamot.tilltalsnamn || ledamot.fornamn || '').trim();
+
   return {
     ledamot,
     uppdrag: uppdrag || [],
-    summary: `${ledamot.fornamn} ${ledamot.efternamn} (${ledamot.parti}), ${ledamot.valkrets}`,
+    summary: `${namn ? `${namn} ` : ''}${ledamot.efternamn} (${ledamot.parti}), ${ledamot.valkrets || 'okänd valkrets'}`,
   };
 }
 
@@ -266,7 +268,7 @@ export async function getFragor(args: z.infer<typeof getFragorSchema>) {
     .from('riksdagen_fragor')
     .select('*')
     .limit(args.limit || 50)
-    .order('datum', { ascending: false });
+    .order('publicerad_datum', { ascending: false });
 
   if (args.typ) {
     query = query.eq('typ', args.typ);
@@ -299,10 +301,10 @@ export async function getInterpellationer(args: z.infer<typeof getInterpellation
     .from('riksdagen_interpellationer')
     .select('*')
     .limit(args.limit || 50)
-    .order('datum', { ascending: false });
+    .order('publicerad_datum', { ascending: false });
 
   if (args.from_date) {
-    query = query.gte('datum', args.from_date);
+    query = query.gte('publicerad_datum', args.from_date);
   }
 
   const { data, error } = await query;

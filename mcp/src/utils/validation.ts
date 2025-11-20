@@ -14,7 +14,7 @@ export const ALLOWED_TABLES: Record<string, string[]> = {
     'riksdagen_dokument',
     'riksdagen_anforanden',
     'riksdagen_voteringar',
-    'riksdagen_voteringar_roster',
+    'riksdagen_votering_ledamoter',
     'riksdagen_motioner',
     'riksdagen_propositioner',
     'riksdagen_betankanden',

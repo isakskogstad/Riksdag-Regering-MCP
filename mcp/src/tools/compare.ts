@@ -5,6 +5,13 @@
 import { getSupabase } from '../utils/supabase.js';
 import { z } from 'zod';
 
+function formatLedamotName(ledamot: any): string {
+  return [ledamot?.tilltalsnamn || ledamot?.fornamn, ledamot?.efternamn]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+}
+
 /**
  * Jämför två ledamöter
  */
@@ -41,25 +48,28 @@ export async function compareLedamoter(args: z.infer<typeof compareLedamoterSche
 
   // Hämta röster för båda
   const { data: roster1 } = await supabase
-    .from('riksdagen_voteringar_roster')
+    .from('riksdagen_votering_ledamoter')
     .select('*')
     .eq('intressent_id', args.intressent_id_1);
 
   const { data: roster2 } = await supabase
-    .from('riksdagen_voteringar_roster')
+    .from('riksdagen_votering_ledamoter')
     .select('*')
     .eq('intressent_id', args.intressent_id_2);
 
+  const namn1 = formatLedamotName(ledamot1);
+  const namn2 = formatLedamotName(ledamot2);
+
   return {
     ledamot1: {
-      namn: `${ledamot1.fornamn} ${ledamot1.efternamn}`,
+      namn: namn1,
       parti: ledamot1.parti,
       valkrets: ledamot1.valkrets,
       antalAnforanden: anforanden1?.length || 0,
       antalRostningar: roster1?.length || 0,
     },
     ledamot2: {
-      namn: `${ledamot2.fornamn} ${ledamot2.efternamn}`,
+      namn: namn2,
       parti: ledamot2.parti,
       valkrets: ledamot2.valkrets,
       antalAnforanden: anforanden2?.length || 0,
@@ -71,7 +81,7 @@ export async function compareLedamoter(args: z.infer<typeof compareLedamoterSche
       skillnadAnforanden: (anforanden1?.length || 0) - (anforanden2?.length || 0),
       skillnadRostningar: (roster1?.length || 0) - (roster2?.length || 0),
     },
-    analysis: `${ledamot1.fornamn} ${ledamot1.efternamn} (${ledamot1.parti}) har ${anforanden1?.length || 0} anföranden och ${roster1?.length || 0} röstningar, medan ${ledamot2.fornamn} ${ledamot2.efternamn} (${ledamot2.parti}) har ${anforanden2?.length || 0} anföranden och ${roster2?.length || 0} röstningar.`,
+    analysis: `${namn1} (${ledamot1.parti}) har ${anforanden1?.length || 0} anföranden och ${roster1?.length || 0} röstningar, medan ${namn2} (${ledamot2.parti}) har ${anforanden2?.length || 0} anföranden och ${roster2?.length || 0} röstningar.`,
   };
 }
 
@@ -100,12 +110,12 @@ export async function comparePartiRostning(args: z.infer<typeof comparePartiRost
 
   // Hämta röster för båda voteringarna
   const { data: roster1 } = await supabase
-    .from('riksdagen_voteringar_roster')
+    .from('riksdagen_votering_ledamoter')
     .select('*')
     .eq('votering_id', args.votering_id_1);
 
   const { data: roster2 } = await supabase
-    .from('riksdagen_voteringar_roster')
+    .from('riksdagen_votering_ledamoter')
     .select('*')
     .eq('votering_id', args.votering_id_2);
 
@@ -129,20 +139,25 @@ export async function comparePartiRostning(args: z.infer<typeof comparePartiRost
     if (rost.rost === 'Nej') partiRoster2[rost.parti].nej++;
   });
 
+  const titel1 = votering1.titel || votering1.beteckning || votering1.votering_id;
+  const titel2 = votering2.titel || votering2.beteckning || votering2.votering_id;
+  const datum1 = votering1.votering_datum || votering1.created_at;
+  const datum2 = votering2.votering_datum || votering2.created_at;
+
   return {
     votering1: {
       id: votering1.votering_id,
-      titel: votering1.titel,
-      datum: votering1.votering_datum,
+      titel: titel1,
+      datum: datum1,
       partiRoster: partiRoster1,
     },
     votering2: {
       id: votering2.votering_id,
-      titel: votering2.titel,
-      datum: votering2.votering_datum,
+      titel: titel2,
+      datum: datum2,
       partiRoster: partiRoster2,
     },
-    analysis: `Jämförelse mellan "${votering1.titel}" (${votering1.votering_datum}) och "${votering2.titel}" (${votering2.votering_datum}).`,
+    analysis: `Jämförelse mellan "${titel1}" (${datum1 || 'okänt datum'}) och "${titel2}" (${datum2 || 'okänt datum'}).`,
   };
 }
 
@@ -236,13 +251,13 @@ export async function comparePartier(args: z.infer<typeof comparePartierSchema>)
     .eq('parti', parti2);
 
   if (args.from_date) {
-    anforandenQuery1 = anforandenQuery1.gte('anfdatum', args.from_date);
-    anforandenQuery2 = anforandenQuery2.gte('anfdatum', args.from_date);
+    anforandenQuery1 = anforandenQuery1.gte('created_at', args.from_date);
+    anforandenQuery2 = anforandenQuery2.gte('created_at', args.from_date);
   }
 
   if (args.to_date) {
-    anforandenQuery1 = anforandenQuery1.lte('anfdatum', args.to_date);
-    anforandenQuery2 = anforandenQuery2.lte('anfdatum', args.to_date);
+    anforandenQuery1 = anforandenQuery1.lte('created_at', args.to_date);
+    anforandenQuery2 = anforandenQuery2.lte('created_at', args.to_date);
   }
 
   const { count: anforanden1 } = await anforandenQuery1;

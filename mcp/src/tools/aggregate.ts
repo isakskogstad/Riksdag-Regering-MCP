@@ -90,11 +90,11 @@ export async function analyzePartiActivity(args: z.infer<typeof analyzePartiActi
     .eq('parti', parti);
 
   if (args.from_date) {
-    anforandenQuery = anforandenQuery.gte('anfdatum', args.from_date);
+    anforandenQuery = anforandenQuery.gte('created_at', args.from_date);
   }
 
   if (args.to_date) {
-    anforandenQuery = anforandenQuery.lte('anfdatum', args.to_date);
+    anforandenQuery = anforandenQuery.lte('created_at', args.to_date);
   }
 
   const { count: anforandenCount } = await anforandenQuery;
@@ -119,9 +119,9 @@ export async function analyzePartiActivity(args: z.infer<typeof analyzePartiActi
   // Hämta senaste aktiviteter
   const { data: senaste_anforanden } = await supabase
     .from('riksdagen_anforanden')
-    .select('debattnamn, anfdatum, talare')
+    .select('talare, debattnamn:avsnittsrubrik, anfdatum:created_at')
     .eq('parti', parti)
-    .order('anfdatum', { ascending: false })
+    .order('created_at', { ascending: false })
     .limit(5);
 
   return {
@@ -174,8 +174,8 @@ export async function analyzeRiksmote(args: z.infer<typeof analyzeRiksmoteSchema
   const { count: anforandenCount } = await supabase
     .from('riksdagen_anforanden')
     .select('*', { count: 'exact', head: true })
-    .gte('anfdatum', `${rmYear}-09-01`)
-    .lt('anfdatum', `${parseInt(rmYear) + 1}-09-01`);
+    .gte('created_at', `${rmYear}-09-01`)
+    .lt('created_at', `${parseInt(rmYear) + 1}-09-01`);
 
   return {
     riksmote: args.rm,
@@ -208,11 +208,11 @@ export async function getTopLists(args: z.infer<typeof getTopListsSchema>) {
         .select('talare, intressent_id');
 
       if (args.from_date) {
-        query = query.gte('anfdatum', args.from_date);
+        query = query.gte('created_at', args.from_date);
       }
 
       if (args.to_date) {
-        query = query.lte('anfdatum', args.to_date);
+        query = query.lte('created_at', args.to_date);
       }
 
       const { data } = await query;
@@ -355,8 +355,8 @@ export async function globalSearch(args: z.infer<typeof globalSearchSchema>) {
   // Sök i anföranden
   const { data: anforanden } = await supabase
     .from('riksdagen_anforanden')
-    .select('anforande_id, debattnamn, talare, anfdatum')
-    .or(`debattnamn.ilike.%${args.query}%,talare.ilike.%${args.query}%`)
+    .select('anforande_id, debattnamn:avsnittsrubrik, talare, anfdatum:created_at')
+    .or(`avsnittsrubrik.ilike.%${args.query}%,talare.ilike.%${args.query}%,replik.ilike.%${args.query}%`)
     .limit(args.limit || 20);
 
   if (anforanden && anforanden.length > 0) {
@@ -366,8 +366,8 @@ export async function globalSearch(args: z.infer<typeof globalSearchSchema>) {
   // Sök i ledamöter
   const { data: ledamoter } = await supabase
     .from('riksdagen_ledamoter')
-    .select('intressent_id, fornamn, efternamn, parti, valkrets')
-    .or(`fornamn.ilike.%${args.query}%,efternamn.ilike.%${args.query}%`)
+    .select('intressent_id, fornamn:tilltalsnamn, efternamn, parti, valkrets')
+    .or(`tilltalsnamn.ilike.%${args.query}%,efternamn.ilike.%${args.query}%`)
     .limit(args.limit || 20);
 
   if (ledamoter && ledamoter.length > 0) {

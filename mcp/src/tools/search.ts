@@ -4,7 +4,6 @@
 
 import { getSupabase } from '../utils/supabase.js';
 import { z } from 'zod';
-import { expandPartyAliases } from '../utils/partyAliases.js';
 
 /**
  * Sök efter ledamöter
@@ -26,14 +25,11 @@ export async function searchLedamoter(args: z.infer<typeof searchLedamoterSchema
     .limit(args.limit || 50);
 
   if (args.namn) {
-    // FIX: fornamn finns inte i API - använd bara tilltalsnamn och efternamn
     query = query.or(`tilltalsnamn.ilike.%${args.namn}%,efternamn.ilike.%${args.namn}%`);
   }
 
   if (args.parti) {
-    // Expand party aliases (e.g. 'L' includes both 'L' and 'FP')
-    const partyAliases = expandPartyAliases(args.parti);
-    query = query.in('parti', partyAliases);
+    query = query.eq('parti', args.parti.toUpperCase());
   }
 
   if (args.valkrets) {
@@ -83,8 +79,7 @@ export async function searchDokument(args: z.infer<typeof searchDokumentSchema>)
   }
 
   if (args.doktyp) {
-    // FIX: Case-insensitive sökning - API använder lowercase
-    query = query.eq('doktyp', args.doktyp.toLowerCase());
+    query = query.eq('doktyp', args.doktyp);
   }
 
   if (args.rm) {
@@ -135,36 +130,30 @@ export async function searchAnforanden(args: z.infer<typeof searchAnforandenSche
     .from('riksdagen_anforanden')
     .select('*')
     .limit(args.limit || 50)
-    .order('systemdatum', { ascending: false }); // FIX: anfdatum → systemdatum
+    .order('created_at', { ascending: false });
 
   if (args.talare) {
     query = query.ilike('talare', `%${args.talare}%`);
   }
 
   if (args.parti) {
-    // Expand party aliases (e.g. 'L' includes both 'L' and 'FP')
-    const partyAliases = expandPartyAliases(args.parti);
-    query = query.in('parti', partyAliases);
+    query = query.eq('parti', args.parti.toUpperCase());
   }
 
   if (args.debattnamn) {
-    // FIX: debattnamn finns inte - använd avsnittsrubrik
     query = query.ilike('avsnittsrubrik', `%${args.debattnamn}%`);
   }
 
   if (args.text) {
-    // FIX: anftext → anforandetext
-    query = query.ilike('anforandetext', `%${args.text}%`);
+    query = query.ilike('replik', `%${args.text}%`);
   }
 
   if (args.from_date) {
-    // FIX: anfdatum → dok_datum
-    query = query.gte('dok_datum', args.from_date);
+    query = query.gte('created_at', args.from_date);
   }
 
   if (args.to_date) {
-    // FIX: anfdatum → dok_datum
-    query = query.lte('dok_datum', args.to_date);
+    query = query.lte('created_at', args.to_date);
   }
 
   const { data, error } = await query;
@@ -197,9 +186,8 @@ export async function searchVoteringar(args: z.infer<typeof searchVoteringarSche
     .from('riksdagen_voteringar')
     .select('*')
     .limit(args.limit || 50)
-    .order('systemdatum', { ascending: false }); // FIX: votering_datum → systemdatum
+    .order('created_at', { ascending: false });
 
-  // FIX: titel finns inte i API - ta bort eller använd beteckning istället
   if (args.titel) {
     query = query.ilike('beteckning', `%${args.titel}%`);
   }
@@ -209,13 +197,11 @@ export async function searchVoteringar(args: z.infer<typeof searchVoteringarSche
   }
 
   if (args.from_date) {
-    // FIX: votering_datum → systemdatum
-    query = query.gte('systemdatum', args.from_date);
+    query = query.gte('created_at', args.from_date);
   }
 
   if (args.to_date) {
-    // FIX: votering_datum → systemdatum
-    query = query.lte('systemdatum', args.to_date);
+    query = query.lte('created_at', args.to_date);
   }
 
   const { data, error } = await query;

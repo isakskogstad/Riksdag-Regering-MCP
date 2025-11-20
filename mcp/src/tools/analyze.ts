@@ -84,7 +84,7 @@ export async function analyzeVotering(args: z.infer<typeof analyzeVoteringSchema
 
   // Hämta detaljerade röster om de finns
   const { data: roster, error: rosterError } = await supabase
-    .from('riksdagen_voteringar_roster')
+    .from('riksdagen_votering_ledamoter')
     .select('*')
     .eq('votering_id', args.votering_id);
 
@@ -108,26 +108,32 @@ export async function analyzeVotering(args: z.infer<typeof analyzeVoteringSchema
     }
   }
 
-  const totalRoster = (votering.antal_ja || 0) + (votering.antal_nej || 0);
-  const jaAndel = totalRoster > 0 ? ((votering.antal_ja || 0) / totalRoster * 100).toFixed(1) : '0';
+  const jaRoster = votering.ja_roster || 0;
+  const nejRoster = votering.nej_roster || 0;
+  const avstarRoster = votering.avstar_roster || 0;
+  const franvarandeRoster = votering.franvarande_roster || 0;
+  const totalRoster = jaRoster + nejRoster;
+  const jaAndel = totalRoster > 0 ? ((jaRoster / totalRoster) * 100).toFixed(1) : '0';
+  const datum = votering.votering_datum || votering.created_at || 'okänt datum';
+  const titel = votering.titel || votering.beteckning || votering.votering_id;
 
   return {
     votering: {
       id: votering.votering_id,
-      titel: votering.titel,
-      datum: votering.votering_datum,
+      titel,
+      datum,
       rm: votering.rm,
       beteckning: votering.beteckning,
     },
     resultat: {
-      ja: votering.antal_ja || 0,
-      nej: votering.antal_nej || 0,
-      avstående: votering.antal_avstående || 0,
-      frånvarande: votering.antal_frånvarande || 0,
+      ja: jaRoster,
+      nej: nejRoster,
+      avstående: avstarRoster,
+      frånvarande: franvarandeRoster,
       jaAndel: `${jaAndel}%`,
     },
     partiAnalys: roster && roster.length > 0 ? partiAnalys : null,
-    analysis: `Votering "${votering.titel}" genomfördes ${votering.votering_datum}. Resultatet blev ${votering.antal_ja || 0} Ja-röster mot ${votering.antal_nej || 0} Nej-röster (${jaAndel}% Ja).`,
+    analysis: `Votering "${titel}" genomfördes ${datum}. Resultatet blev ${jaRoster} Ja-röster mot ${nejRoster} Nej-röster (${jaAndel}% Ja).`,
   };
 }
 
@@ -161,18 +167,18 @@ export async function analyzeLedamot(args: z.infer<typeof analyzeLedamotSchema>)
     .eq('intressent_id', args.intressent_id);
 
   if (args.from_date) {
-    anforandenQuery = anforandenQuery.gte('anfdatum', args.from_date);
+    anforandenQuery = anforandenQuery.gte('created_at', args.from_date);
   }
 
   if (args.to_date) {
-    anforandenQuery = anforandenQuery.lte('anfdatum', args.to_date);
+    anforandenQuery = anforandenQuery.lte('created_at', args.to_date);
   }
 
   const { data: anforanden, error: anforandenError } = await anforandenQuery;
 
   // Hämta röster
   let rosterQuery = supabase
-    .from('riksdagen_voteringar_roster')
+    .from('riksdagen_votering_ledamoter')
     .select('*')
     .eq('intressent_id', args.intressent_id);
 
@@ -186,9 +192,14 @@ export async function analyzeLedamot(args: z.infer<typeof analyzeLedamotSchema>)
     totalt: roster.length,
   } : null;
 
+  const ledamotNamn = [ledamot.tilltalsnamn || ledamot.fornamn, ledamot.efternamn]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+
   return {
     ledamot: {
-      namn: `${ledamot.fornamn} ${ledamot.efternamn}`,
+      namn: ledamotNamn,
       parti: ledamot.parti,
       valkrets: ledamot.valkrets,
       status: ledamot.status,
@@ -198,7 +209,7 @@ export async function analyzeLedamot(args: z.infer<typeof analyzeLedamotSchema>)
       antalRostningar: roster?.length || 0,
     },
     rostningsstatistik: rostStats,
-    analysis: `${ledamot.fornamn} ${ledamot.efternamn} (${ledamot.parti}) har gjort ${anforanden?.length || 0} anföranden och deltagit i ${roster?.length || 0} voteringar.`,
+    analysis: `${ledamotNamn} (${ledamot.parti}) har gjort ${anforanden?.length || 0} anföranden och deltagit i ${roster?.length || 0} voteringar.`,
   };
 }
 
@@ -280,8 +291,8 @@ export async function analyzeTrend(args: z.infer<typeof analyzeTrendSchema>) {
 
   const tableMap = {
     'dokument': { table: 'riksdagen_dokument', dateField: 'datum' },
-    'anforanden': { table: 'riksdagen_anforanden', dateField: 'anfdatum' },
-    'voteringar': { table: 'riksdagen_voteringar', dateField: 'votering_datum' },
+    'anforanden': { table: 'riksdagen_anforanden', dateField: 'created_at' },
+    'voteringar': { table: 'riksdagen_voteringar', dateField: 'created_at' },
   };
 
   const config = tableMap[args.dataType];

@@ -4,9 +4,9 @@
 
 export interface Ledamot {
   intressent_id: string;
-  fornamn: string;
-  efternamn: string;
   tilltalsnamn?: string;
+  fornamn?: string;
+  efternamn: string;
   parti: string;
   valkrets?: string;
   status: string;
@@ -40,12 +40,13 @@ export interface Anforande {
   anforande_id: string;
   intressent_id?: string;
   dok_id?: string;
-  debattnamn?: string;
-  anftext?: string;
-  anfdatum?: string;
+  debattsekund?: number;
   parti?: string;
   talare?: string;
   avsnittsrubrik?: string;
+  replik?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Votering {
@@ -55,10 +56,11 @@ export interface Votering {
   punkt?: number;
   titel?: string;
   votering_datum?: string;
-  antal_ja?: number;
-  antal_nej?: number;
-  antal_frånvarande?: number;
-  antal_avstående?: number;
+  created_at?: string;
+  ja_roster?: number;
+  nej_roster?: number;
+  avstar_roster?: number;
+  franvarande_roster?: number;
 }
 
 export interface Pressmeddelande {
