@@ -9,13 +9,14 @@ interface ResolverOptions<T> {
   supabaseQuery: () => Promise<T | null>;
   fallbackApi?: () => Promise<T>;
   persist?: (data: T) => Promise<void>;
+  onMiss?: () => Promise<void> | void;
 }
 
 /**
  * Kör en supabase-fråga och returnerar data, annars försöker fallback API och sparar resultatet.
  */
 export async function resolveData<T>(options: ResolverOptions<T>): Promise<{ data: T | null; source: 'supabase' | 'live_api'; fetchedAt: string }> {
-  const { supabaseQuery, fallbackApi, persist } = options;
+  const { supabaseQuery, fallbackApi, persist, onMiss } = options;
 
   const supabaseResult = await supabaseQuery();
   if (supabaseResult) {
@@ -32,6 +33,14 @@ export async function resolveData<T>(options: ResolverOptions<T>): Promise<{ dat
       source: 'supabase',
       fetchedAt: new Date().toISOString(),
     };
+  }
+
+  if (onMiss) {
+    try {
+      await onMiss();
+    } catch {
+      // ignore
+    }
   }
 
   const liveData = await fallbackApi();
@@ -62,4 +71,16 @@ export async function fetchRiksdagenDokument(dokId: string): Promise<any | null>
 
   const json: any = await response.json();
   return json?.dokgrupp?.dokument?.[0] ?? null;
+}
+
+export async function saveJsonToStorage(bucket: string, path: string, payload: unknown) {
+  try {
+    const supabase = getSupabase();
+    await supabase.storage.from(bucket).upload(path, JSON.stringify(payload), {
+      contentType: 'application/json',
+      upsert: true,
+    });
+  } catch (error) {
+    console.warn(`Kunde inte spara data i bucket ${bucket}:`, (error as Error).message);
+  }
 }

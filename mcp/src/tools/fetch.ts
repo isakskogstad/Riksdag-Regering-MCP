@@ -4,7 +4,8 @@
 
 import { getSupabase } from '../utils/supabase.js';
 import { z } from 'zod';
-import { resolveData, fetchRiksdagenDokument } from '../utils/resolver.js';
+import { resolveData, fetchRiksdagenDokument, saveJsonToStorage } from '../utils/resolver.js';
+import { logDataMiss } from '../utils/telemetry.js';
 
 /**
  * Hämta ett specifikt dokument med alla detaljer
@@ -43,6 +44,14 @@ export async function getDokument(args: z.infer<typeof getDokumentSchema>) {
         organ: liveData.organ,
       };
       await supabase.from('riksdagen_dokument').upsert(mapped, { onConflict: 'dok_id' });
+      await saveJsonToStorage('riksdagen-dokument', `${args.dok_id}.json`, liveData);
+    },
+    onMiss: async () => {
+      await logDataMiss({
+        entity: 'riksdagen_dokument',
+        identifier: args.dok_id,
+        reason: 'saknas i supabase',
+      });
     },
   });
 

@@ -4,7 +4,7 @@
 
 import { getSupabase } from './supabase.js';
 
-interface LogPayload {
+interface ToolLogPayload extends Record<string, unknown> {
   tool_name: string;
   status: 'success' | 'error';
   duration_ms: number;
@@ -12,18 +12,32 @@ interface LogPayload {
   args?: Record<string, unknown>;
 }
 
-/**
- * Försök skriva ett logg-event till admin_activity_log (ignorerar fel).
- */
-export async function logToolCall(payload: LogPayload): Promise<void> {
+interface DataMissPayload extends Record<string, unknown> {
+  entity: string;
+  identifier: string;
+  reason?: string;
+}
+
+async function insertAdminLog(action: string, metadata: Record<string, unknown>) {
   try {
     const supabase = getSupabase();
     await supabase.from('admin_activity_log').insert({
-      action: 'mcp_tool_call',
-      metadata: payload,
+      action,
+      metadata,
     });
   } catch (error) {
     // Felsäkert: skriv bara till stderr om loggtabellen saknas eller RLS blockerar.
-    console.warn('Kunde inte logga MCP-anrop:', (error as Error).message);
+    console.warn(`Kunde inte logga admin-aktivitet (${action}):`, (error as Error).message);
   }
+}
+
+/**
+ * Försök skriva ett logg-event till admin_activity_log (ignorerar fel).
+ */
+export async function logToolCall(payload: ToolLogPayload): Promise<void> {
+  await insertAdminLog('mcp_tool_call', payload);
+}
+
+export async function logDataMiss(payload: DataMissPayload): Promise<void> {
+  await insertAdminLog('mcp_data_miss', payload);
 }
