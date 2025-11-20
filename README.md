@@ -272,8 +272,7 @@ MIT License - Se [LICENSE](LICENSE) för detaljer.
 
 ## Erkännanden
 
-- **Sveriges Riksdag** - Öppen data API på [data.riksdagen.se](https://data.riksdagen.se/)
-- **g0v.se** - Regeringsdata-aggregering på [g0v.se](https://g0v.se/)
+- **g0v.se** - Tack till Pierre för din insats med [g0v.se](https://g0v.se/)
 
 ---
 
