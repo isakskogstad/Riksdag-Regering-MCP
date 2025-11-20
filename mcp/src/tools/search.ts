@@ -122,28 +122,6 @@ export async function searchDokument(args: z.infer<typeof searchDokumentSchema>,
     throw new Error(`Fel vid sökning av dokument: ${error.message}`);
   }
 
-<<<<<<< HEAD
-  const dokument = data || [];
-
-  if (log) {
-    await log(`📄 Hittade ${dokument.length} dokument`);
-  }
-
-  const chunkSize = 20;
-  const chunks = [];
-  for (let i = 0; i < dokument.length; i += chunkSize) {
-    const chunk = dokument.slice(i, i + chunkSize);
-    chunks.push({
-      type: 'text' as const,
-      text: JSON.stringify({ chunk: i / chunkSize + 1, items: chunk }),
-    });
-  }
-
-  return {
-    count: dokument.length,
-    dokument,
-    chunks,
-=======
   const dokument = data || [];
 
   if (log) {
@@ -300,7 +278,6 @@ export async function searchDokumentFulltext(args: z.infer<typeof searchDokument
     snippet_length: snippetLength,
     analysis: `Hittade ${sortedResults.length} dokument som matchar "${args.query}" med fulltextsökning.`,
     ...buildListResponse(sortedResults, limit),
->>>>>>> 50ea8ec (fix: reduce list payloads and enforce safe limits)
   };
 }
 
