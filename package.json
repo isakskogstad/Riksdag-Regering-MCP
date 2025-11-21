@@ -8,6 +8,7 @@
     "mcp"
   ],
   "scripts": {
+    "type-check": "npm run type-check --workspace mcp",
     "mcp:install": "cd mcp && npm install",
     "mcp:build": "cd mcp && npm run build",
     "mcp:dev": "cd mcp && npm run dev",
