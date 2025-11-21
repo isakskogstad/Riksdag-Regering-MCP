@@ -26,7 +26,7 @@ export function normalizeApiResponse(
 
   if (!list) return [];
 
-  const hits = parseInt(list['@antal'] || list['@hits'] || '0');
+  const hits = parseInt(list['@antal'] || list['@hits'] || list['@traffar'] || '0');
 
   if (hits === 0) {
     return [];
@@ -59,7 +59,7 @@ export function extractPaginationMeta(data: any, listKey: string): {
     return { hits: 0, page: 1, hasMore: false };
   }
 
-  const hits = parseInt(list['@hits'] || list['@antal'] || '0');
+  const hits = parseInt(list['@hits'] || list['@antal'] || list['@traffar'] || '0');
   const page = parseInt(list['@sida'] || '1');
   const nextPage = list['@nasta_sida'];
 
