@@ -220,7 +220,7 @@ export function createMCPServer(logger?: any) {
         duration_ms: performance.now() - start,
       });
 
-      return { content: [{ type: 'application/json', text: JSON.stringify(result, null, 2) }] };
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     } catch (error) {
       if (error instanceof ZodError) {
         throw new Error(`Ogiltiga argument för ${def.name}: ${error.message}`);

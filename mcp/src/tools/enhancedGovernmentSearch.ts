@@ -19,7 +19,10 @@ export async function enhancedGovernmentSearch(args: z.infer<typeof enhancedSear
     fetchDokumentDirect({ sok: args.query, sz: limit }),
     fetchAnforandenDirect({ sok: args.query, sz: limit }),
     fetchLedamoterDirect({ fnamn: args.query, enamn: args.query, sz: limit }),
-    searchG0vAllTypes(args.query, { limit, types: ['pressmeddelanden', 'propositioner', 'sou', 'tal'] }),
+    searchG0vAllTypes(args.query, {
+      limit,
+      types: ['pressmeddelanden', 'propositioner', 'sou', 'ds', 'rapporter', 'tal', 'remisser'],
+    }),
   ]);
 
   return {

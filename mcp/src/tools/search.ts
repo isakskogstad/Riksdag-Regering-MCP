@@ -255,9 +255,11 @@ export const searchRegeringSchema = z.object({
   title: z.string().optional().describe('Titel att söka efter'),
   departement: z.string().optional().describe('Departement'),
   type: z
-    .enum(['pressmeddelanden', 'propositioner', 'sou', 'tal', 'remisser'])
+    .string()
     .optional()
-    .describe('Dokumenttyp'),
+    .describe(
+      'Dokumenttyp (t.ex. pressmeddelanden, propositioner, sou, ds, dir, remisser, regeringsuppdrag, rapporter, tal, debattartiklar, uttalanden, artiklar)'
+    ),
   limit: z.number().min(1).max(200).optional().default(20),
 });
 
@@ -285,7 +287,7 @@ export async function searchRegering(args: z.infer<typeof searchRegeringSchema>)
 
   const results = await searchG0vAllTypes(args.title || '', {
     limit,
-    types: ['pressmeddelanden', 'propositioner', 'sou', 'tal'],
+    types: ['pressmeddelanden', 'propositioner', 'sou', 'ds', 'rapporter', 'tal', 'remisser'],
   });
 
   if (args.departement) {
