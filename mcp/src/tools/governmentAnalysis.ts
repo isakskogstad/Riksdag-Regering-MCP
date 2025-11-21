@@ -12,6 +12,7 @@ import {
   G0vDocumentType,
 } from '../utils/g0vApi.js';
 import { getSupabase } from '../utils/supabase.js';
+import { normalizeLimit } from '../utils/helpers.js';
 
 /**
  * Analysera departementens aktivitet
@@ -69,13 +70,14 @@ export async function trackPropositionFlow(
   args: z.infer<typeof trackPropositionFlowSchema>
 ) {
   const supabase = getSupabase();
+  const topLimit = normalizeLimit(undefined, 5, 20);
 
   // 1. Sök i Regeringens propositioner
   const { data: regeringProp } = await supabase
     .from('regeringskansliet_propositioner')
     .select('*')
     .ilike('beteckning', `%${args.proposition_reference}%`)
-    .limit(5);
+    .limit(topLimit);
 
   // 2. Sök i Riksdagens propositioner
   const { data: riksdagProp } = await supabase
@@ -83,7 +85,7 @@ export async function trackPropositionFlow(
     .select('*')
     .eq('doktyp', 'prop')
     .ilike('beteckning', `%${args.proposition_reference}%`)
-    .limit(5);
+    .limit(topLimit);
 
   // 3. Sök relaterade betänkanden
   const { data: betankanden } = await supabase
@@ -91,7 +93,7 @@ export async function trackPropositionFlow(
     .select('*')
     .eq('doktyp', 'bet')
     .ilike('beteckning', `%${args.proposition_reference}%`)
-    .limit(5);
+    .limit(topLimit);
 
   // 4. Sök relaterade motioner
   const { data: motioner } = await supabase
@@ -99,14 +101,14 @@ export async function trackPropositionFlow(
     .select('*')
     .eq('doktyp', 'mot')
     .ilike('titel', `%${args.proposition_reference}%`)
-    .limit(10);
+    .limit(normalizeLimit(10, 10, 50));
 
   // 5. Sök voteringar
   const { data: voteringar } = await supabase
     .from('riksdagen_voteringar')
     .select('*')
     .ilike('beteckning', `%${args.proposition_reference}%`)
-    .limit(5);
+    .limit(topLimit);
 
   return {
     proposition: args.proposition_reference,

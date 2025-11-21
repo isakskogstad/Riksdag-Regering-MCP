@@ -6,6 +6,7 @@
 import { z } from 'zod';
 import { getSupabase } from '../utils/supabase.js';
 import { fetchG0vDocuments, searchG0vAllTypes, G0vDocumentType } from '../utils/g0vApi.js';
+import { normalizeLimit } from '../utils/helpers.js';
 
 /**
  * Unified search across all government document types
@@ -16,12 +17,13 @@ export const searchGovernmentAllSchema = z.object({
   departement: z.string().optional().describe('Filtrera på departement'),
   from_date: z.string().optional().describe('Från datum (YYYY-MM-DD)'),
   to_date: z.string().optional().describe('Till datum (YYYY-MM-DD)'),
-  limit: z.number().optional().default(50).describe('Max resultat per typ'),
+  limit: z.number().min(1).max(200).optional().default(50).describe('Max resultat per typ'),
   use_g0v: z.boolean().optional().default(true).describe('Använd g0v.se API'),
 });
 
 export async function searchGovernmentAll(args: z.infer<typeof searchGovernmentAllSchema>) {
   const results: Record<string, any[]> = {};
+  const limit = normalizeLimit(args.limit, 50, 200);
 
   // 1. Search in Supabase (if available)
   const supabase = getSupabase();
@@ -41,7 +43,7 @@ export async function searchGovernmentAll(args: z.infer<typeof searchGovernmentA
       .from(table)
       .select('*')
       .ilike('titel', `%${args.query}%`)
-      .limit(args.limit);
+      .limit(limit);
 
     if (args.departement) {
       query = query.ilike('departement', `%${args.departement}%`);
@@ -74,7 +76,7 @@ export async function searchGovernmentAll(args: z.infer<typeof searchGovernmentA
       types: g0vTypes,
       dateFrom: args.from_date,
       dateTo: args.to_date,
-      limit: args.limit,
+      limit,
     });
 
     // Merge g0v results
@@ -132,7 +134,7 @@ export const advancedGovernmentSearchSchema = z.object({
   kategorier: z.array(z.string()).optional().describe('Kategorier'),
   from_date: z.string().optional().describe('Från datum'),
   to_date: z.string().optional().describe('Till datum'),
-  limit: z.number().optional().default(50).describe('Max antal resultat'),
+  limit: z.number().min(1).max(200).optional().default(50).describe('Max antal resultat'),
   sort_by: z
     .enum(['publicerad_datum', 'relevans', 'titel'])
     .optional()
@@ -161,9 +163,10 @@ export async function advancedGovernmentSearch(
       : [tableMap[args.document_type]];
 
   const allResults: any[] = [];
+  const limit = normalizeLimit(args.limit, 50, 200);
 
   for (const table of searchTables) {
-    let query = supabase.from(table).select('*').limit(args.limit);
+    let query = supabase.from(table).select('*').limit(limit);
 
     // Full-text search on title
     if (args.sort_by === 'relevans') {
@@ -233,7 +236,7 @@ export async function advancedGovernmentSearch(
       },
     },
     total: allResults.length,
-    results: allResults.slice(0, args.limit),
+    results: allResults.slice(0, limit),
   };
 }
 

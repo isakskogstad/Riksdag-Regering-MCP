@@ -5,6 +5,7 @@
 import { getSupabase } from '../utils/supabase.js';
 import { fetchVoteringarDirect } from '../utils/riksdagenApi.js';
 import { z } from 'zod';
+import { normalizeLimit } from '../utils/helpers.js';
 
 /**
  * Hämta detaljerad information om en votering
@@ -13,11 +14,12 @@ export const getVotingDetailsSchema = z.object({
   votering_id: z.string().optional().describe('Voterings-ID'),
   rm: z.string().optional().describe('Riksmöte'),
   beteckning: z.string().optional().describe('Beteckning att söka efter'),
-  limit: z.number().optional().default(10).describe('Antal voteringar'),
+  limit: z.number().min(1).max(200).optional().default(10).describe('Antal voteringar'),
 });
 
 export async function getVotingDetails(args: z.infer<typeof getVotingDetailsSchema>) {
   const supabase = getSupabase();
+  const limit = normalizeLimit(args.limit, 10, 200);
 
   if (args.votering_id) {
     // Single voting query
@@ -78,7 +80,7 @@ export async function getVotingDetails(args: z.infer<typeof getVotingDetailsSche
   let query = supabase
     .from('riksdagen_voteringar')
     .select('*')
-    .limit(args.limit)
+    .limit(limit)
     .order('systemdatum', { ascending: false });
 
   if (args.rm) {
@@ -203,13 +205,14 @@ export async function compareVotings(args: z.infer<typeof compareVotingsSchema>)
 export const findControversialVotingsSchema = z.object({
   rm: z.string().describe('Riksmöte'),
   maxMargin: z.number().optional().default(10).describe('Maximal marginal för att anses kontroversiell'),
-  limit: z.number().optional().default(20).describe('Antal resultat'),
+  limit: z.number().min(1).max(200).optional().default(20).describe('Antal resultat'),
 });
 
 export async function findControversialVotings(
   args: z.infer<typeof findControversialVotingsSchema>
 ) {
   const supabase = getSupabase();
+  const limit = normalizeLimit(args.limit, 20, 200);
 
   const { data, error } = await supabase
     .from('riksdagen_voteringar')
@@ -243,7 +246,7 @@ export async function findControversialVotings(
     }))
     .filter((v) => v.margin <= args.maxMargin)
     .sort((a, b) => a.margin - b.margin)
-    .slice(0, args.limit);
+    .slice(0, limit);
 
   return {
     rm: args.rm,

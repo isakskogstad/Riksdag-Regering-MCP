@@ -110,3 +110,13 @@ export function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
   return text.substring(0, maxLength - 3) + '...';
 }
+
+/**
+ * Säkerställ rimliga gränser på limit-parametrar.
+ */
+export function normalizeLimit(limit: number | undefined, defaultLimit = 50, maxLimit = 200): number {
+  const fallback = Number.isInteger(defaultLimit) ? defaultLimit : 50;
+  const candidate = limit === undefined ? fallback : Math.trunc(limit);
+  if (Number.isNaN(candidate) || candidate < 1) return 1;
+  return Math.min(candidate, maxLimit);
+}

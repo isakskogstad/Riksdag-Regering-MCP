@@ -13,6 +13,7 @@ import {
   ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { zodToJsonSchema } from 'zod-to-json-schema';
+import { ZodError } from 'zod';
 
 import { listResources, getResource } from '../resources/index.js';
 
@@ -20,6 +21,7 @@ import { listResources, getResource } from '../resources/index.js';
 import {
   searchLedamoter, searchLedamoterSchema,
   searchDokument, searchDokumentSchema,
+  searchDokumentFulltext, searchDokumentFulltextSchema,
   searchAnforanden, searchAnforandenSchema,
   searchVoteringar, searchVoteringarSchema,
   searchRegering, searchRegeringSchema,
@@ -236,6 +238,11 @@ const TOOL_DEFINITIONS = [
     description: 'Returnera riksdagens dokument med fulltext (cacha lokalt)',
     inputSchema: getDokumentInnehallSchema,
   },
+  {
+    name: 'search_dokument_fulltext',
+    description: 'Fulltextsök i dokumentens innehåll',
+    inputSchema: searchDokumentFulltextSchema,
+  },
 
   // INSIGHTS
   {
@@ -260,90 +267,121 @@ const TOOL_DEFINITIONS = [
   },
 ];
 
+const TOOL_SCHEMA_MAP: Record<string, unknown> = Object.fromEntries(
+  TOOL_DEFINITIONS.map(tool => [tool.name, tool.inputSchema])
+);
+
 /**
  * Tool handler - kopplar verktygsnamn till funktioner
  */
-async function handleToolCall(name: string, args: any, logger?: { sendLog?: (text: string) => Promise<void> }) {
+async function handleToolCall(
+  name: string,
+  args: any,
+  logger?: {
+    sendLog?: (text: string) => Promise<void>;
+    setParsedArgs?: (parsed: Record<string, unknown>) => void;
+  }
+) {
   const sendLog = logger?.sendLog;
+  const schema = TOOL_SCHEMA_MAP[name] as { parse?: (value: any) => any } | undefined;
+
+  let parsedArgs = args ?? {};
+
+  if (schema?.parse) {
+    try {
+      parsedArgs = schema.parse(parsedArgs);
+      logger?.setParsedArgs?.(parsedArgs);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const details = error.issues
+          .map(issue => `${issue.path.join('.') || 'root'}: ${issue.message}`)
+          .join('; ');
+        throw new Error(`Ogiltiga argument för ${name}: ${details}`);
+      }
+      throw error;
+    }
+  }
   switch (name) {
     // Search tools
     case 'search_ledamoter':
-      return await searchLedamoter(args);
+      return await searchLedamoter(parsedArgs);
     case 'search_dokument':
       await sendLog?.('🔎 Hämtar dokument…');
-      return await searchDokument(args, sendLog);
+      return await searchDokument(parsedArgs, sendLog);
+    case 'search_dokument_fulltext':
+      return await searchDokumentFulltext(parsedArgs, sendLog);
     case 'search_anforanden':
-      return await searchAnforanden(args);
+      return await searchAnforanden(parsedArgs);
     case 'search_voteringar':
-      return await searchVoteringar(args);
+      return await searchVoteringar(parsedArgs);
     case 'search_regering':
-      return await searchRegering(args);
+      return await searchRegering(parsedArgs);
 
     // Analysis tools
     case 'analyze_partifordelning':
-      return await analyzePartifordelning(args);
+      return await analyzePartifordelning(parsedArgs);
     case 'analyze_votering':
-      return await analyzeVotering(args);
+      return await analyzeVotering(parsedArgs);
     case 'analyze_ledamot':
-      return await analyzeLedamot(args);
+      return await analyzeLedamot(parsedArgs);
     case 'analyze_dokument_statistik':
-      return await analyzeDokumentStatistik(args);
+      return await analyzeDokumentStatistik(parsedArgs);
     case 'analyze_trend':
-      return await analyzeTrend(args);
+      return await analyzeTrend(parsedArgs);
 
     // Comparison tools
     case 'compare_ledamoter':
-      return await compareLedamoter(args);
+      return await compareLedamoter(parsedArgs);
     case 'compare_parti_rostning':
-      return await comparePartiRostning(args);
+      return await comparePartiRostning(parsedArgs);
     case 'compare_riksdag_regering':
-      return await compareRiksdagRegering(args);
+      return await compareRiksdagRegering(parsedArgs);
     case 'compare_partier':
-      return await comparePartier(args);
+      return await comparePartier(parsedArgs);
 
     // Fetch tools
     case 'get_dokument':
-      return await getDokument(args);
+      return await getDokument(parsedArgs);
     case 'get_ledamot':
-      return await getLedamot(args);
+      return await getLedamot(parsedArgs);
     case 'get_motioner':
-      return await getMotioner(args);
+      return await getMotioner(parsedArgs);
     case 'get_propositioner':
-      return await getPropositioner(args);
+      return await getPropositioner(parsedArgs);
     case 'get_betankanden':
-      return await getBetankanden(args);
+      return await getBetankanden(parsedArgs);
     case 'get_fragor':
-      return await getFragor(args);
+      return await getFragor(parsedArgs);
     case 'get_interpellationer':
-      return await getInterpellationer(args);
+      return await getInterpellationer(parsedArgs);
     case 'get_utskott':
-      return await getUtskott(args);
+      return await getUtskott(parsedArgs);
 
     // Aggregate tools
     case 'get_data_summary':
-      return await getDataSummary(args);
+      return await getDataSummary(parsedArgs);
     case 'analyze_parti_activity':
-      return await analyzePartiActivity(args);
+      return await analyzePartiActivity(parsedArgs);
     case 'analyze_riksmote':
-      return await analyzeRiksmote(args);
+      return await analyzeRiksmote(parsedArgs);
     case 'get_top_lists':
-      return await getTopLists(args);
+      return await getTopLists(parsedArgs);
     case 'global_search':
-      return await globalSearch(args);
+      return await globalSearch(parsedArgs);
     case 'get_pressmeddelande':
-      return await getPressmeddelande(args);
+      return await getPressmeddelande(parsedArgs);
     case 'get_dokument_innehall':
-      return await getDokumentInnehall(args, sendLog);
+      return await getDokumentInnehall(parsedArgs, sendLog);
 
     // Insights
     case 'get_votering_roster_summary':
-      return await getVoteringRosterSummary(args);
+      return await getVoteringRosterSummary(parsedArgs);
     case 'summarize_pressmeddelande':
-      return await summarizePressmeddelande(args);
+      return await summarizePressmeddelande(parsedArgs);
     case 'get_sync_status':
       return await getSyncStatus();
     case 'get_data_dictionary':
-      return await getDataDictionary(args);
+      return await getDataDictionary(parsedArgs);
 
     default:
       throw new Error(`Okänt verktyg: ${name}`);
@@ -387,11 +425,15 @@ export function createMCPServer(logger?: { error: (msg: string, ...args: any[]) 
     const { name, arguments: args } = request.params;
 
     const start = Date.now();
+    let parsedArgsForLog: Record<string, unknown> | undefined;
     try {
       const logMessages: string[] = [];
       const result = await handleToolCall(name, args as any, {
         sendLog: async (text: string) => {
           logMessages.push(text);
+        },
+        setParsedArgs: (parsed) => {
+          parsedArgsForLog = parsed;
         },
       });
 
@@ -399,7 +441,7 @@ export function createMCPServer(logger?: { error: (msg: string, ...args: any[]) 
         tool_name: name,
         status: 'success',
         duration_ms: Date.now() - start,
-        args: args as Record<string, unknown>,
+        args: (parsedArgsForLog ?? args) as Record<string, unknown>,
       }).catch(() => {});
 
       (result as any).meta = {
@@ -436,7 +478,7 @@ export function createMCPServer(logger?: { error: (msg: string, ...args: any[]) 
         status: 'error',
         duration_ms: Date.now() - start,
         error_message: errorMessage,
-        args: args as Record<string, unknown>,
+        args: (parsedArgsForLog ?? args) as Record<string, unknown>,
       }).catch(() => {});
 
       // Använd logger om tillgänglig, annars console.error

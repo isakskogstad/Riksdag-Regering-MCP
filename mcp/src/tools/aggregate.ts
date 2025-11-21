@@ -4,6 +4,7 @@
 
 import { getSupabase } from '../utils/supabase.js';
 import { z } from 'zod';
+import { normalizeLimit } from '../utils/helpers.js';
 
 /**
  * Hämta sammanställning av all data i systemet
@@ -192,13 +193,14 @@ export async function analyzeRiksmote(args: z.infer<typeof analyzeRiksmoteSchema
  */
 export const getTopListsSchema = z.object({
   category: z.enum(['talare', 'partier', 'utskott', 'dokumenttyper']).describe('Kategori att lista'),
-  limit: z.number().optional().default(10).describe('Antal i listan'),
+  limit: z.number().min(1).max(200).optional().default(10).describe('Antal i listan'),
   from_date: z.string().optional().describe('Från datum (YYYY-MM-DD)'),
   to_date: z.string().optional().describe('Till datum (YYYY-MM-DD)'),
 });
 
 export async function getTopLists(args: z.infer<typeof getTopListsSchema>) {
   const supabase = getSupabase();
+  const limit = normalizeLimit(args.limit, 10);
 
   switch (args.category) {
     case 'talare': {
@@ -226,7 +228,7 @@ export async function getTopLists(args: z.infer<typeof getTopListsSchema>) {
 
       const sorted = Object.entries(talarCount)
         .sort(([, a], [, b]) => b - a)
-        .slice(0, args.limit || 10);
+        .slice(0, limit);
 
       return {
         category: 'Topp talare',
@@ -249,7 +251,7 @@ export async function getTopLists(args: z.infer<typeof getTopListsSchema>) {
 
       const sorted = Object.entries(partiCount)
         .sort(([, a], [, b]) => b - a)
-        .slice(0, args.limit || 10);
+        .slice(0, limit);
 
       return {
         category: 'Topp partier (efter anföranden)',
@@ -282,7 +284,7 @@ export async function getTopLists(args: z.infer<typeof getTopListsSchema>) {
 
       const sorted = Object.entries(organCount)
         .sort(([, a], [, b]) => b - a)
-        .slice(0, args.limit || 10);
+        .slice(0, limit);
 
       return {
         category: 'Topp utskott/organ',
@@ -315,7 +317,7 @@ export async function getTopLists(args: z.infer<typeof getTopListsSchema>) {
 
       const sorted = Object.entries(typCount)
         .sort(([, a], [, b]) => b - a)
-        .slice(0, args.limit || 10);
+        .slice(0, limit);
 
       return {
         category: 'Topp dokumenttyper',
@@ -333,11 +335,13 @@ export async function getTopLists(args: z.infer<typeof getTopListsSchema>) {
  */
 export const globalSearchSchema = z.object({
   query: z.string().describe('Sökterm'),
-  limit: z.number().optional().default(20).describe('Max resultat per tabell'),
+  limit: z.number().min(1).max(200).optional().default(20).describe('Max resultat per tabell'),
 });
 
 export async function globalSearch(args: z.infer<typeof globalSearchSchema>) {
   const supabase = getSupabase();
+
+  const limit = normalizeLimit(args.limit, 20);
 
   const results: Record<string, any[]> = {};
 
@@ -346,7 +350,7 @@ export async function globalSearch(args: z.infer<typeof globalSearchSchema>) {
     .from('riksdagen_dokument')
     .select('dok_id, titel, doktyp, datum')
     .ilike('titel', `%${args.query}%`)
-    .limit(args.limit || 20);
+    .limit(limit);
 
   if (dokument && dokument.length > 0) {
     results['dokument'] = dokument;
@@ -357,7 +361,7 @@ export async function globalSearch(args: z.infer<typeof globalSearchSchema>) {
     .from('riksdagen_anforanden')
     .select('anforande_id, debattnamn:avsnittsrubrik, talare, anfdatum:created_at')
     .or(`avsnittsrubrik.ilike.%${args.query}%,talare.ilike.%${args.query}%,replik.ilike.%${args.query}%`)
-    .limit(args.limit || 20);
+    .limit(limit);
 
   if (anforanden && anforanden.length > 0) {
     results['anforanden'] = anforanden;
@@ -368,7 +372,7 @@ export async function globalSearch(args: z.infer<typeof globalSearchSchema>) {
     .from('riksdagen_ledamoter')
     .select('intressent_id, fornamn:tilltalsnamn, efternamn, parti, valkrets')
     .or(`tilltalsnamn.ilike.%${args.query}%,efternamn.ilike.%${args.query}%`)
-    .limit(args.limit || 20);
+    .limit(limit);
 
   if (ledamoter && ledamoter.length > 0) {
     results['ledamoter'] = ledamoter;
@@ -379,7 +383,7 @@ export async function globalSearch(args: z.infer<typeof globalSearchSchema>) {
     .from('regeringskansliet_pressmeddelanden')
     .select('document_id, titel, publicerad_datum, departement')
     .ilike('titel', `%${args.query}%`)
-    .limit(args.limit || 20);
+    .limit(limit);
 
   if (press && press.length > 0) {
     results['pressmeddelanden'] = press;

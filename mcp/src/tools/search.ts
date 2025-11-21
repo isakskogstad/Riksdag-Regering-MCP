@@ -3,6 +3,7 @@
  */
 
 import { getSupabase } from '../utils/supabase.js';
+import { stripHtml, truncate, normalizeLimit } from '../utils/helpers.js';
 import { z } from 'zod';
 
 /**
@@ -13,16 +14,18 @@ export const searchLedamoterSchema = z.object({
   parti: z.string().optional().describe('Parti (t.ex. S, M, SD, V, MP, C, L, KD)'),
   valkrets: z.string().optional().describe('Valkrets'),
   status: z.string().optional().describe('Status (tjänstgörande, tjänstledig, etc.)'),
-  limit: z.number().optional().default(50).describe('Max antal resultat'),
+  limit: z.number().min(1).max(200).optional().default(50).describe('Max antal resultat'),
 });
 
 export async function searchLedamoter(args: z.infer<typeof searchLedamoterSchema>) {
   const supabase = getSupabase();
 
+  const limit = normalizeLimit(args.limit, 50);
+
   let query = supabase
     .from('riksdagen_ledamoter')
     .select('*')
-    .limit(args.limit || 50);
+    .limit(limit);
 
   if (args.namn) {
     query = query.or(`tilltalsnamn.ilike.%${args.namn}%,efternamn.ilike.%${args.namn}%`);
@@ -62,16 +65,18 @@ export const searchDokumentSchema = z.object({
   organ: z.string().optional().describe('Organ (t.ex. KU, FiU, UU)'),
   from_date: z.string().optional().describe('Från datum (YYYY-MM-DD)'),
   to_date: z.string().optional().describe('Till datum (YYYY-MM-DD)'),
-  limit: z.number().optional().default(50).describe('Max antal resultat'),
+  limit: z.number().min(1).max(200).optional().default(50).describe('Max antal resultat'),
 });
 
 export async function searchDokument(args: z.infer<typeof searchDokumentSchema>, log?: (text: string) => Promise<void>) {
   const supabase = getSupabase();
 
+  const limit = normalizeLimit(args.limit, 50);
+
   let query = supabase
     .from('riksdagen_dokument')
     .select('*')
-    .limit(args.limit || 50)
+    .limit(limit)
     .order('datum', { ascending: false });
 
   if (args.titel) {
@@ -128,6 +133,46 @@ export async function searchDokument(args: z.infer<typeof searchDokumentSchema>,
 }
 
 /**
+ * Fulltext-sök i dokument.
+ */
+export const searchDokumentFulltextSchema = z.object({
+  query: z.string().min(2).describe('Text att söka efter'),
+  limit: z.number().min(1).max(200).optional().default(20),
+});
+
+export async function searchDokumentFulltext(args: z.infer<typeof searchDokumentFulltextSchema>, log?: (text: string) => Promise<void>) {
+  const supabase = getSupabase();
+  const limit = normalizeLimit(args.limit, 20);
+  await log?.(`🔍 Fulltextsök: “${args.query}”`);
+
+  const { data, error } = await supabase
+    .from('riksdagen_dokument')
+    .select('dok_id, titel, doktyp, rm, datum, text')
+    .ilike('text', `%${args.query}%`)
+    .limit(limit);
+
+  if (error) {
+    throw new Error(`Fel vid fulltextsökning: ${error.message}`);
+  }
+
+  const hits = (data || []).map(doc => ({
+    dok_id: doc.dok_id,
+    titel: doc.titel,
+    doktyp: doc.doktyp,
+    rm: doc.rm,
+    datum: doc.datum,
+    snippet: truncate(stripHtml(doc.text || ''), 200),
+  }));
+
+  await log?.(`📄 Träffar: ${hits.length}`);
+
+  return {
+    count: hits.length,
+    hits,
+  };
+}
+
+/**
  * Sök efter anföranden
  */
 export const searchAnforandenSchema = z.object({
@@ -137,16 +182,18 @@ export const searchAnforandenSchema = z.object({
   text: z.string().optional().describe('Text att söka i anförandet'),
   from_date: z.string().optional().describe('Från datum (YYYY-MM-DD)'),
   to_date: z.string().optional().describe('Till datum (YYYY-MM-DD)'),
-  limit: z.number().optional().default(50).describe('Max antal resultat'),
+  limit: z.number().min(1).max(200).optional().default(50).describe('Max antal resultat'),
 });
 
 export async function searchAnforanden(args: z.infer<typeof searchAnforandenSchema>) {
   const supabase = getSupabase();
 
+  const limit = normalizeLimit(args.limit, 50);
+
   let query = supabase
     .from('riksdagen_anforanden')
     .select('*')
-    .limit(args.limit || 50)
+    .limit(limit)
     .order('created_at', { ascending: false });
 
   if (args.talare) {
@@ -193,16 +240,18 @@ export const searchVoteringarSchema = z.object({
   rm: z.string().optional().describe('Riksmöte (t.ex. 2024/25)'),
   from_date: z.string().optional().describe('Från datum (YYYY-MM-DD)'),
   to_date: z.string().optional().describe('Till datum (YYYY-MM-DD)'),
-  limit: z.number().optional().default(50).describe('Max antal resultat'),
+  limit: z.number().min(1).max(200).optional().default(50).describe('Max antal resultat'),
 });
 
 export async function searchVoteringar(args: z.infer<typeof searchVoteringarSchema>) {
   const supabase = getSupabase();
 
+  const limit = normalizeLimit(args.limit, 50);
+
   let query = supabase
     .from('riksdagen_voteringar')
     .select('*')
-    .limit(args.limit || 50)
+    .limit(limit)
     .order('created_at', { ascending: false });
 
   if (args.titel) {
@@ -249,11 +298,13 @@ export const searchRegeringSchema = z.object({
   departement: z.string().optional().describe('Departement'),
   from_date: z.string().optional().describe('Från datum (YYYY-MM-DD)'),
   to_date: z.string().optional().describe('Till datum (YYYY-MM-DD)'),
-  limit: z.number().optional().default(50).describe('Max antal resultat'),
+  limit: z.number().min(1).max(200).optional().default(50).describe('Max antal resultat'),
 });
 
 export async function searchRegering(args: z.infer<typeof searchRegeringSchema>) {
   const supabase = getSupabase();
+
+  const limit = normalizeLimit(args.limit, 50);
 
   const tableMap: Record<string, string> = {
     'pressmeddelanden': 'regeringskansliet_pressmeddelanden',
@@ -269,7 +320,7 @@ export async function searchRegering(args: z.infer<typeof searchRegeringSchema>)
   let query = supabase
     .from(tableName)
     .select('*')
-    .limit(args.limit || 50)
+    .limit(limit)
     .order('publicerad_datum', { ascending: false });
 
   if (args.titel) {
