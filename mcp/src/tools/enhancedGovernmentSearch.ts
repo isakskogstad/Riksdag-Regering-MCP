@@ -80,8 +80,8 @@ export async function enhancedGovernmentSearch(args: z.infer<typeof enhancedSear
       title: doc.title,
       url: doc.url,
       published: doc.published,
-      summary: doc.summary?.substring(0, 200) || '', // Limit summary to 200 chars
-      id: doc.id || null,
+      sender: doc.sender,
+      type: doc.type,
     }));
 
     regeringen = {

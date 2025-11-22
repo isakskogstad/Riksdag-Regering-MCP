@@ -362,7 +362,7 @@ export const searchRegeringSchema = z.object({
     ),
   dateFrom: z.string().optional().describe('Från datum (YYYY-MM-DD)'),
   dateTo: z.string().optional().describe('Till datum (YYYY-MM-DD)'),
-  limit: z.number().min(1).max(200).optional().default(20),
+  limit: z.number().min(1).max(200).optional().default(10).describe('Max antal resultat (default: 10 för att minska response-storlek)'),
 });
 
 function generateDocumentId(doc: any): string {
@@ -417,8 +417,22 @@ function matchesDepartement(doc: any, departementQuery: string): boolean {
   return false;
 }
 
+/**
+ * Create a compact summary of a G0vDocument
+ */
+function summarizeDocument(doc: any) {
+  return {
+    id: generateDocumentId(doc),
+    title: doc.title,
+    published: doc.published,
+    url: doc.url,
+    sender: doc.sender,
+    type: doc.type,
+  };
+}
+
 export async function searchRegering(args: z.infer<typeof searchRegeringSchema>) {
-  const limit = normalizeLimit(args.limit, 20);
+  const limit = normalizeLimit(args.limit, 10); // Reduced default from 20 to 10
 
   if (args.type) {
     const documents = await fetchG0vDocuments(args.type as any, {
@@ -428,20 +442,17 @@ export async function searchRegering(args: z.infer<typeof searchRegeringSchema>)
       dateTo: args.dateTo,
     });
 
-    // Add unique IDs to all documents
-    const docsWithIds = documents.map((doc) => ({
-      ...doc,
-      id: generateDocumentId(doc),
-    }));
-
     const filtered = args.departement
-      ? docsWithIds.filter((doc) => matchesDepartement(doc, args.departement!))
-      : docsWithIds;
+      ? documents.filter((doc) => matchesDepartement(doc, args.departement!))
+      : documents;
+
+    // Return only essential fields
+    const summaries = filtered.slice(0, limit).map(summarizeDocument);
 
     return {
       type: args.type,
-      count: filtered.slice(0, limit).length,
-      documents: filtered.slice(0, limit),
+      count: summaries.length,
+      documents: summaries,
     };
   }
 
@@ -452,19 +463,17 @@ export async function searchRegering(args: z.infer<typeof searchRegeringSchema>)
     dateTo: args.dateTo,
   });
 
-  // Add IDs and apply department filtering
+  // Apply department filtering and create summaries
   const processedResults: any = {};
   Object.keys(results).forEach((key) => {
-    let docs = results[key as keyof typeof results].map((doc) => ({
-      ...doc,
-      id: generateDocumentId(doc),
-    }));
+    let docs = results[key as keyof typeof results];
 
     if (args.departement) {
       docs = docs.filter((doc) => matchesDepartement(doc, args.departement!));
     }
 
-    processedResults[key] = docs;
+    // Return only essential fields
+    processedResults[key] = docs.map(summarizeDocument);
   });
 
   const totals = Object.fromEntries(

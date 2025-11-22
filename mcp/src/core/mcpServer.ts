@@ -268,7 +268,8 @@ export function createMCPServer(logger?: any) {
         duration_ms: performance.now() - start,
       });
 
-      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+      // Return compact JSON to reduce token usage
+      return { content: [{ type: 'text', text: JSON.stringify(result) }] };
     } catch (error) {
       if (error instanceof ZodError) {
         throw new Error(`Ogiltiga argument för ${def.name}: ${error.message}`);
