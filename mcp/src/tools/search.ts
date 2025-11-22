@@ -254,9 +254,13 @@ export async function searchAnforanden(args: z.infer<typeof searchAnforandenSche
     debatt: item.avsnittsrubrik,
   }));
 
+  // Check if any anföranden have empty text
+  const hasEmptyText = anforanden.some(a => !a.anforandetext || a.anforandetext.trim() === '');
+
   return {
     count: filteredData.length, // Return actual filtered count
     anforanden,
+    notice: hasEmptyText ? 'OBS: Vissa eller alla anföranden kan ha tomt textfält. Detta är en begränsning i Riksdagens API som inte alltid returnerar fulltext för anföranden. Använd anforande_id och debatt-namn för att identifiera anföranden.' : undefined,
   };
 }
 

@@ -36,6 +36,7 @@ async function fetchText(url?: string | null): Promise<string | null> {
 
 export const getDokumentSchema = z.object({
   dok_id: z.string().min(2).describe('Dokument ID, t.ex. H901FiU1'),
+  include_full_text: z.boolean().optional().default(false).describe('Inkludera fulltext (kan vara mycket stor data)'),
 });
 
 export async function getDokument(args: z.infer<typeof getDokumentSchema>) {
@@ -44,7 +45,16 @@ export async function getDokument(args: z.infer<typeof getDokumentSchema>) {
     throw new Error(`Dokument ${args.dok_id} hittades inte i Riksdagens API.`);
   }
 
-  const text = await fetchText(dokument.dokument_url_text || dokument.dokument_url_html);
+  // Only fetch full text if explicitly requested to avoid huge responses
+  let text: string | null = null;
+  let textWarning: string | undefined = undefined;
+
+  if (args.include_full_text) {
+    text = await fetchText(dokument.dokument_url_text || dokument.dokument_url_html);
+    if (text && text.length > 100000) {
+      textWarning = `OBS: Dokumentet är mycket stort (${Math.round(text.length / 1000)}KB). Överväg att använda 'summary' istället för fulltext.`;
+    }
+  }
 
   return {
     dok_id: dokument.dok_id,
@@ -55,8 +65,10 @@ export async function getDokument(args: z.infer<typeof getDokumentSchema>) {
     organ: dokument.organ,
     summary: dokument.summary,
     text,
+    textWarning,
     attachments: dokument.filbilaga?.fil || [],
     url: dokument.dokument_url_html ? `https:${dokument.dokument_url_html}` : dokument.relurl,
+    notice: args.include_full_text ? undefined : 'För att få fulltext, sätt include_full_text: true. OBS: Kan vara mycket stor data.',
   };
 }
 
