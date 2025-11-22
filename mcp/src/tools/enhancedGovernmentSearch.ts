@@ -70,10 +70,29 @@ export async function enhancedGovernmentSearch(args: z.infer<typeof enhancedSear
   };
 
   if (args.includeRegeringen) {
-    regeringen = await searchG0vAllTypes(args.query, {
+    const rawRegeringen = await searchG0vAllTypes(args.query, {
       limit: regeringenLimit,
       types: ['pressmeddelanden', 'propositioner', 'sou', 'ds', 'rapporter', 'tal', 'remisser'],
     });
+
+    // Strip unnecessary metadata to reduce response size
+    const stripMetadata = (docs: any[]) => docs.map((doc: any) => ({
+      title: doc.title,
+      url: doc.url,
+      published: doc.published,
+      summary: doc.summary?.substring(0, 200) || '', // Limit summary to 200 chars
+      id: doc.id || null,
+    }));
+
+    regeringen = {
+      pressmeddelanden: stripMetadata(rawRegeringen.pressmeddelanden || []),
+      propositioner: stripMetadata(rawRegeringen.propositioner || []),
+      sou: stripMetadata(rawRegeringen.sou || []),
+      ds: stripMetadata(rawRegeringen.ds || []),
+      rapporter: stripMetadata(rawRegeringen.rapporter || []),
+      tal: stripMetadata(rawRegeringen.tal || []),
+      remisser: stripMetadata(rawRegeringen.remisser || []),
+    };
   }
 
   // Filter out person pages (they don't have dok_id)
