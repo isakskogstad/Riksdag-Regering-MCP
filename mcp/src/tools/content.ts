@@ -56,7 +56,14 @@ export async function getPressmeddelande(args: z.infer<typeof getPressmeddelande
     });
 
     if (!match || !match.url) {
-      throw new Error(`Pressmeddelandet "${args.document_id}" hittades inte via g0v.se. Prova med en mer specifik sökterm eller full URL.`);
+      return {
+        error: `Pressmeddelandet "${args.document_id}" hittades inte via g0v.se.`,
+        suggestions: [
+          'Prova med en mer specifik sökterm',
+          'Använd full URL från regeringen.se',
+          'Använd search_regering för att hitta pressmeddelanden'
+        ]
+      };
     }
 
     const content = await fetchG0vDocumentContent(match.url);
@@ -70,7 +77,11 @@ export async function getPressmeddelande(args: z.infer<typeof getPressmeddelande
       markdown: content,
     };
   } catch (error) {
-    throw new Error(`Kunde inte hämta pressmeddelande: ${error instanceof Error ? error.message : String(error)}`);
+    return {
+      error: `Kunde inte hämta pressmeddelande: ${error instanceof Error ? error.message : String(error)}`,
+      document_id: args.document_id,
+      suggestions: ['Försök igen om en stund', 'Använd search_regering istället']
+    };
   }
 }
 
@@ -80,25 +91,40 @@ export const getDokumentInnehallSchema = z.object({
 });
 
 export async function getDokumentInnehall(args: z.infer<typeof getDokumentInnehallSchema>) {
-  const doc = await loadDocument(args.dok_id);
-  if (!doc) {
-    throw new Error(`Dokument ${args.dok_id} hittades inte.`);
+  try {
+    const doc = await loadDocument(args.dok_id);
+    if (!doc) {
+      return {
+        error: `Dokument ${args.dok_id} hittades inte.`,
+        suggestions: [
+          'Kontrollera att dokument-ID är korrekt',
+          'Använd search_dokument för att hitta dokument',
+          'Använd get_dokument istället'
+        ]
+      };
+    }
+
+    const text = await loadDocumentText(doc);
+    const cleanText = text ? stripHtml(text) : null;
+
+    return {
+      dok_id: doc.dok_id,
+      titel: doc.titel,
+      datum: doc.datum,
+      doktyp: doc.doktyp,
+      rm: doc.rm,
+      summary: doc.summary,
+      snippet: cleanText ? truncate(cleanText, 400) : null,
+      text: args.include_full_text ? cleanText : null,
+      url: doc.dokument_url_html ? `https:${doc.dokument_url_html}` : doc.relurl,
+    };
+  } catch (error) {
+    return {
+      error: `Fel vid hämtning av dokumentinnehåll: ${error instanceof Error ? error.message : String(error)}`,
+      dok_id: args.dok_id,
+      suggestions: ['Försök igen om en stund', 'Använd get_dokument eller search_dokument istället']
+    };
   }
-
-  const text = await loadDocumentText(doc);
-  const cleanText = text ? stripHtml(text) : null;
-
-  return {
-    dok_id: doc.dok_id,
-    titel: doc.titel,
-    datum: doc.datum,
-    doktyp: doc.doktyp,
-    rm: doc.rm,
-    summary: doc.summary,
-    snippet: cleanText ? truncate(cleanText, 400) : null,
-    text: args.include_full_text ? cleanText : null,
-    url: doc.dokument_url_html ? `https:${doc.dokument_url_html}` : doc.relurl,
-  };
 }
 
 export const summarizePressmeddelandeSchema = z.object({
@@ -136,7 +162,14 @@ export async function summarizePressmeddelande(args: z.infer<typeof summarizePre
     });
 
     if (!match || !match.url) {
-      throw new Error(`Pressmeddelandet "${args.document_id}" hittades inte. Prova med en mer specifik sökterm eller full URL.`);
+      return {
+        error: `Pressmeddelandet "${args.document_id}" hittades inte.`,
+        suggestions: [
+          'Prova med en mer specifik sökterm',
+          'Använd full URL från regeringen.se',
+          'Använd get_pressmeddelande eller search_regering istället'
+        ]
+      };
     }
 
     const markdown = await fetchG0vDocumentContent(match.url);
@@ -152,6 +185,10 @@ export async function summarizePressmeddelande(args: z.infer<typeof summarizePre
       summary: truncate(clean, args.max_length || 500),
     };
   } catch (error) {
-    throw new Error(`Kunde inte sammanfatta pressmeddelande: ${error instanceof Error ? error.message : String(error)}`);
+    return {
+      error: `Kunde inte sammanfatta pressmeddelande: ${error instanceof Error ? error.message : String(error)}`,
+      document_id: args.document_id,
+      suggestions: ['Försök igen om en stund', 'Använd search_regering eller get_pressmeddelande istället']
+    };
   }
 }

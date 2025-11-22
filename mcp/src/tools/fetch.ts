@@ -40,36 +40,51 @@ export const getDokumentSchema = z.object({
 });
 
 export async function getDokument(args: z.infer<typeof getDokumentSchema>) {
-  const dokument = await fetchDocumentById(args.dok_id);
-  if (!dokument) {
-    throw new Error(`Dokument ${args.dok_id} hittades inte i Riksdagens API.`);
-  }
-
-  // Only fetch full text if explicitly requested to avoid huge responses
-  let text: string | null = null;
-  let textWarning: string | undefined = undefined;
-
-  if (args.include_full_text) {
-    text = await fetchText(dokument.dokument_url_text || dokument.dokument_url_html);
-    if (text && text.length > 100000) {
-      textWarning = `OBS: Dokumentet är mycket stort (${Math.round(text.length / 1000)}KB). Överväg att använda 'summary' istället för fulltext.`;
+  try {
+    const dokument = await fetchDocumentById(args.dok_id);
+    if (!dokument) {
+      return {
+        error: `Dokument ${args.dok_id} hittades inte i Riksdagens API.`,
+        suggestions: [
+          'Kontrollera att dokument-ID är korrekt (t.ex. HD0144, H901FiU1)',
+          'Använd search_dokument för att hitta dokument',
+          'Vissa dokument kan vara arkiverade eller raderade'
+        ]
+      };
     }
-  }
 
-  return {
-    dok_id: dokument.dok_id,
-    titel: dokument.titel,
-    datum: dokument.datum,
-    doktyp: dokument.doktyp,
-    rm: dokument.rm,
-    organ: dokument.organ,
-    summary: dokument.summary,
-    text,
-    textWarning,
-    attachments: dokument.filbilaga?.fil || [],
-    url: dokument.dokument_url_html ? `https:${dokument.dokument_url_html}` : dokument.relurl,
-    notice: args.include_full_text ? undefined : 'För att få fulltext, sätt include_full_text: true. OBS: Kan vara mycket stor data.',
-  };
+    // Only fetch full text if explicitly requested to avoid huge responses
+    let text: string | null = null;
+    let textWarning: string | undefined = undefined;
+
+    if (args.include_full_text) {
+      text = await fetchText(dokument.dokument_url_text || dokument.dokument_url_html);
+      if (text && text.length > 100000) {
+        textWarning = `OBS: Dokumentet är mycket stort (${Math.round(text.length / 1000)}KB). Överväg att använda 'summary' istället för fulltext.`;
+      }
+    }
+
+    return {
+      dok_id: dokument.dok_id,
+      titel: dokument.titel,
+      datum: dokument.datum,
+      doktyp: dokument.doktyp,
+      rm: dokument.rm,
+      organ: dokument.organ,
+      summary: dokument.summary,
+      text,
+      textWarning,
+      attachments: dokument.filbilaga?.fil || [],
+      url: dokument.dokument_url_html ? `https:${dokument.dokument_url_html}` : dokument.relurl,
+      notice: args.include_full_text ? undefined : 'För att få fulltext, sätt include_full_text: true. OBS: Kan vara mycket stor data.',
+    };
+  } catch (error) {
+    return {
+      error: `Fel vid hämtning av dokument: ${error instanceof Error ? error.message : String(error)}`,
+      dok_id: args.dok_id,
+      suggestions: ['Försök igen om en stund', 'Använd search_dokument istället']
+    };
+  }
 }
 
 export const getLedamotSchema = z.object({
@@ -77,21 +92,36 @@ export const getLedamotSchema = z.object({
 });
 
 export async function getLedamot(args: z.infer<typeof getLedamotSchema>) {
-  const response = await fetchLedamoterDirect({ iid: args.intressent_id, sz: 1 });
-  if (response.data.length === 0) {
-    throw new Error(`Ledamot ${args.intressent_id} hittades inte.`);
+  try {
+    const response = await fetchLedamoterDirect({ iid: args.intressent_id, sz: 1 });
+    if (response.data.length === 0) {
+      return {
+        error: `Ledamot ${args.intressent_id} hittades inte.`,
+        suggestions: [
+          'Kontrollera att intressent_id är korrekt',
+          'Använd search_ledamoter för att hitta ledamöter',
+          'Ledamoten kan ha lämnat riksdagen'
+        ]
+      };
+    }
+    const person = response.data[0];
+    return {
+      intressent_id: person.intressent_id,
+      namn: `${person.tilltalsnamn} ${person.efternamn}`.trim(),
+      parti: person.parti,
+      valkrets: person.valkrets,
+      status: person.status,
+      bild_url: person.bild_url_max || person.bild_url_192,
+      uppdrag: person.personuppdrag?.uppdrag || [],
+      biografi: person.personuppgift?.uppgift || [],
+    };
+  } catch (error) {
+    return {
+      error: `Fel vid hämtning av ledamot: ${error instanceof Error ? error.message : String(error)}`,
+      intressent_id: args.intressent_id,
+      suggestions: ['Försök igen om en stund', 'Använd search_ledamoter istället']
+    };
   }
-  const person = response.data[0];
-  return {
-    intressent_id: person.intressent_id,
-    namn: `${person.tilltalsnamn} ${person.efternamn}`.trim(),
-    parti: person.parti,
-    valkrets: person.valkrets,
-    status: person.status,
-    bild_url: person.bild_url_max || person.bild_url_192,
-    uppdrag: person.personuppdrag?.uppdrag || [],
-    biografi: person.personuppgift?.uppgift || [],
-  };
 }
 
 function buildDokumentFetcher(doktyp: string) {
