@@ -261,52 +261,51 @@ export async function analyzeByDepartment(
     }
   > = {};
 
+  const DEFAULT_SENDER = 'Okänt departement';
+
   // Analyze press releases
   pressmeddelanden.forEach((doc) => {
-    if (doc.sender) {
-      if (!departments[doc.sender]) {
-        departments[doc.sender] = {
-          count: 0,
-          pressReleases: 0,
-          propositions: 0,
-          speeches: 0,
-        };
-      }
-      departments[doc.sender].count++;
-      departments[doc.sender].pressReleases++;
+    const sender = doc.sender || DEFAULT_SENDER;
+    if (!departments[sender]) {
+      departments[sender] = {
+        count: 0,
+        pressReleases: 0,
+        propositions: 0,
+        speeches: 0,
+      };
     }
+    departments[sender].count++;
+    departments[sender].pressReleases++;
   });
 
   // Analyze propositions
   propositioner.forEach((doc) => {
-    if (doc.sender) {
-      if (!departments[doc.sender]) {
-        departments[doc.sender] = {
-          count: 0,
-          pressReleases: 0,
-          propositions: 0,
-          speeches: 0,
-        };
-      }
-      departments[doc.sender].count++;
-      departments[doc.sender].propositions++;
+    const sender = doc.sender || DEFAULT_SENDER;
+    if (!departments[sender]) {
+      departments[sender] = {
+        count: 0,
+        pressReleases: 0,
+        propositions: 0,
+        speeches: 0,
+      };
     }
+    departments[sender].count++;
+    departments[sender].propositions++;
   });
 
   // Analyze speeches
   tal.forEach((doc) => {
-    if (doc.sender) {
-      if (!departments[doc.sender]) {
-        departments[doc.sender] = {
-          count: 0,
-          pressReleases: 0,
-          propositions: 0,
-          speeches: 0,
-        };
-      }
-      departments[doc.sender].count++;
-      departments[doc.sender].speeches++;
+    const sender = doc.sender || DEFAULT_SENDER;
+    if (!departments[sender]) {
+      departments[sender] = {
+        count: 0,
+        pressReleases: 0,
+        propositions: 0,
+        speeches: 0,
+      };
     }
+    departments[sender].count++;
+    departments[sender].speeches++;
   });
 
   const total =

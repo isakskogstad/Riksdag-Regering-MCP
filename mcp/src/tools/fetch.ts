@@ -24,7 +24,7 @@ async function fetchDocumentById(dokId: string) {
 
 async function fetchText(url?: string | null): Promise<string | null> {
   if (!url) return null;
-  const absoluteUrl = url.startsWith('http') ? url : `https:${url}`;
+  const absoluteUrl = url.startsWith('http://') || url.startsWith('https://') ? url : `https:${url}`;
   const response = await fetch(absoluteUrl, {
     headers: { 'User-Agent': 'Wget/1.21 (riksdag-regering-mcp)' },
   });

@@ -12,7 +12,7 @@ async function loadDocumentText(doc: any): Promise<string | null> {
   if (!doc) return null;
   const url = doc.dokument_url_text || doc.dokument_url_html;
   if (!url) return null;
-  const absoluteUrl = url.startsWith('http') ? url : `https:${url}`;
+  const absoluteUrl = url.startsWith('http://') || url.startsWith('https://') ? url : `https:${url}`;
   const response = await fetch(absoluteUrl, {
     headers: { 'User-Agent': 'Wget/1.21 (riksdag-regering-mcp)' },
   });
@@ -28,12 +28,23 @@ export const getPressmeddelandeSchema = z.object({
 
 export async function getPressmeddelande(args: z.infer<typeof getPressmeddelandeSchema>) {
   const data = await fetchG0vDocuments('pressmeddelanden', { limit: 500, search: args.document_id });
-  const match = data.find((doc) =>
-    doc.url?.toLowerCase().includes(args.document_id.toLowerCase()) ||
-    doc.title?.toLowerCase().includes(args.document_id.toLowerCase())
-  );
+  const searchLower = args.document_id.toLowerCase();
 
-  if (!match) {
+  const match = data.find((doc) => {
+    // Try to match exact URL if it's a full URL
+    if (searchLower.startsWith('http')) {
+      return doc.url?.toLowerCase() === searchLower;
+    }
+    // Try to match last segment of URL path
+    const docUrlSegment = doc.url?.split('/').filter(Boolean).pop();
+    if (docUrlSegment && docUrlSegment.toLowerCase() === searchLower.split('/').filter(Boolean).pop()) {
+      return true;
+    }
+    // Fallback to title includes
+    return doc.title?.toLowerCase().includes(searchLower);
+  });
+
+  if (!match || !match.url) { // Ensure match.url is present
     throw new Error(`Pressmeddelandet ${args.document_id} hittades inte via g0v.se`);
   }
 
@@ -83,12 +94,23 @@ export const summarizePressmeddelandeSchema = z.object({
 
 export async function summarizePressmeddelande(args: z.infer<typeof summarizePressmeddelandeSchema>) {
   const data = await fetchG0vDocuments('pressmeddelanden', { limit: 300, search: args.document_id });
-  const match = data.find((doc) =>
-    doc.url?.toLowerCase().includes(args.document_id.toLowerCase()) ||
-    doc.title?.toLowerCase().includes(args.document_id.toLowerCase())
-  );
+  const searchLower = args.document_id.toLowerCase();
 
-  if (!match) {
+  const match = data.find((doc) => {
+    // Try to match exact URL if it's a full URL
+    if (searchLower.startsWith('http')) {
+      return doc.url?.toLowerCase() === searchLower;
+    }
+    // Try to match last segment of URL path
+    const docUrlSegment = doc.url?.split('/').filter(Boolean).pop();
+    if (docUrlSegment && docUrlSegment.toLowerCase() === searchLower.split('/').filter(Boolean).pop()) {
+      return true;
+    }
+    // Fallback to title includes
+    return doc.title?.toLowerCase().includes(searchLower);
+  });
+
+  if (!match || !match.url) { // Ensure match.url is present
     throw new Error(`Pressmeddelandet ${args.document_id} hittades inte.`);
   }
 

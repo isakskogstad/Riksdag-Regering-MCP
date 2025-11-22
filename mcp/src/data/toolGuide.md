@@ -136,7 +136,7 @@ Sök efter anföranden från riksdagsledamöter.
 
 ```
 
-
+**Observera om anförandetext:** För framtida eller relativt nya protokoll kan fältet `anforandetext` vara tomt då Riksdagens API ännu inte har behandlat eller tillgängliggjort den fullständiga texten. Sökningen och metadata är dock korrekta.
 
 
 
@@ -184,7 +184,7 @@ Sök efter voteringar och röster i Riksdagen.
 
 ```
 
-
+**Observera om gruppering:** Vid breda sökningar med `groupBy` (t.ex. endast med `rm`) kan Riksdagens API ibland returnera sammanfattade poster som `parti = "-"`, istället för en detaljerad uppdelning. Detta är ett API-beteende.
 
 
 
@@ -233,9 +233,12 @@ Hämta information om debatter, beslut, utskottsmöten och andra aktiviteter.
 
 ```
 
+**Observera om kalenderdata:** Riksdagens kalender-API kan i vissa fall returnera icke-JSON-innehåll (t.ex. HTML) även när JSON begärs. Verktyget kommer då att kasta ett fel för att indikera att strukturerad data inte kunde hämtas.
+
 
 
 ---
+
 
 ## Riksdagens Dokument-ID: Struktur och Användning
 
@@ -362,6 +365,7 @@ För tolkade sändningar (engelska/teckenspråk) läggs `en` eller `tt` till sis
 
 ---
 
+
 ## Regeringskansliets verktyg (via g0v.se) (Exempel)
 
 ### 1. Sök regeringsdokument: `search_regering`
@@ -425,6 +429,7 @@ Få en översikt över dokumentaktivitet per departement från Regeringskansliet
 ```
 
 ---
+
 
 ## Allmänna tips för effektiv användning
 
