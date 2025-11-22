@@ -9,7 +9,9 @@ import { normalizeLimit, stripHtml } from '../utils/helpers.js';
 
 export const enhancedSearchSchema = z.object({
   query: z.string().min(2).describe('Sökterm som används mot alla källor'),
-  limit: z.number().min(1).max(100).optional().default(20),
+  limit: z.number().min(1).max(100).optional().default(20).describe('Max antal resultat per kategori (Riksdagen dokument/anföranden)'),
+  regeringenLimit: z.number().min(1).max(20).optional().default(5).describe('Max antal resultat per regeringskategori (för att begränsa response-storlek)'),
+  includeRegeringen: z.boolean().optional().default(true).describe('Inkludera resultat från Regeringskansliet'),
 });
 
 // Helper function to normalize titles for comparison
@@ -47,16 +49,32 @@ function findDuplicates(riksdagenDocs: any[], regeringenDocs: any[]): Map<string
 
 export async function enhancedGovernmentSearch(args: z.infer<typeof enhancedSearchSchema>) {
   const limit = normalizeLimit(args.limit, 20);
+  const regeringenLimit = normalizeLimit(args.regeringenLimit, 5, 20);
 
-  const [documents, anforanden, ledamoter, regeringen] = await Promise.all([
+  // Fetch Riksdagen data
+  const [documents, anforanden, ledamoter] = await Promise.all([
     fetchDokumentDirect({ sok: args.query, sz: limit * 2 }), // Fetch extra to account for person pages
     fetchAnforandenDirect({ sok: args.query, sz: limit }),
     fetchLedamoterDirect({ fnamn: args.query, enamn: args.query, sz: limit }),
-    searchG0vAllTypes(args.query, {
-      limit,
-      types: ['pressmeddelanden', 'propositioner', 'sou', 'ds', 'rapporter', 'tal', 'remisser'],
-    }),
   ]);
+
+  // Fetch Regeringen data if requested
+  let regeringen: any = {
+    pressmeddelanden: [],
+    propositioner: [],
+    sou: [],
+    ds: [],
+    rapporter: [],
+    tal: [],
+    remisser: [],
+  };
+
+  if (args.includeRegeringen) {
+    regeringen = await searchG0vAllTypes(args.query, {
+      limit: regeringenLimit,
+      types: ['pressmeddelanden', 'propositioner', 'sou', 'ds', 'rapporter', 'tal', 'remisser'],
+    });
+  }
 
   // Filter out person pages (they don't have dok_id)
   const documentsOnly = documents.data.filter((doc) => doc.dok_id).slice(0, limit);
@@ -81,6 +99,13 @@ export async function enhancedGovernmentSearch(args: z.infer<typeof enhancedSear
       } : {}),
     };
   });
+
+  // Calculate total results
+  const totalRegeringenResults = args.includeRegeringen
+    ? Object.values(regeringen).reduce((sum: number, arr: any) => sum + (Array.isArray(arr) ? arr.length : 0), 0)
+    : 0;
+
+  const totalRiksdagenResults = riksdagDokument.length + anforanden.data.length + ledamoter.data.length;
 
   return {
     query: args.query,
@@ -111,6 +136,12 @@ export async function enhancedGovernmentSearch(args: z.infer<typeof enhancedSear
       notice: duplicates.size > 0
         ? `Hittade ${duplicates.size} dokument som finns i båda källorna. Dessa är markerade med 'duplicate: true' och visar vilken källa som är primär.`
         : 'Inga dubbletter hittades mellan Riksdagen och Regeringen.',
+    },
+    summary: {
+      totalResults: totalRiksdagenResults + totalRegeringenResults,
+      riksdagenResults: totalRiksdagenResults,
+      regeringenResults: totalRegeringenResults,
+      notice: `Resultat begränsade för att undvika enorma responses. Riksdagen: max ${limit} per kategori. Regeringen: max ${regeringenLimit} per kategori (7 kategorier). Använd 'limit' och 'regeringenLimit' för att justera, eller 'includeRegeringen: false' för att bara söka i Riksdagen.`,
     },
   };
 }
