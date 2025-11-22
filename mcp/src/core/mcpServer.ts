@@ -11,6 +11,13 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 import { ZodError } from 'zod';
 import { listResources, getResource } from '../resources/index.js';
 import {
+  validateResponseSize,
+  sanitizeToolResponse,
+  createSafeErrorResponse,
+  ResponseTooLargeError,
+} from '../utils/responseSafety.js';
+import { logger } from '../utils/logger.js';
+import {
   searchLedamoter,
   searchLedamoterSchema,
   searchDokument,
@@ -85,10 +92,6 @@ import {
   analyzeG0vByDepartment,
   analyzeG0vByDepartmentSchema
 } from '../tools/g0vDepartmentAnalysis.js';
-import {
-  getAllG0vDocuments,
-  getAllG0vDocumentsSchema
-} from '../tools/g0vAllDocuments.js';
 
 const TOOL_DEFINITIONS = [
   { name: 'search_ledamoter', description: 'Sök efter ledamöter i Riksdagen', inputSchema: searchLedamoterSchema },
@@ -102,7 +105,7 @@ const TOOL_DEFINITIONS = [
   { name: 'get_g0v_latest_update', description: 'Hämta information om senaste uppdateringen från Regeringskansliet (via g0v.se)', inputSchema: getG0vLatestUpdateSchema },
   { name: 'get_g0v_document_content', description: 'Hämta innehållet i ett specifikt dokument från Regeringskansliet (via g0v.se) i Markdown-format', inputSchema: getG0vDocumentContentSchema },
   { name: 'analyze_g0v_by_department', description: 'Analysera dokument från Regeringskansliet (via g0v.se) per departement', inputSchema: analyzeG0vByDepartmentSchema },
-  { name: 'get_all_g0v_documents', description: 'Hämta alla dokument från Regeringskansliet (via g0v.se) (Varning: Kan vara mycket stor datamängd)', inputSchema: getAllG0vDocumentsSchema },
+  // REMOVED: get_all_g0v_documents - unsafe function that could fetch 10,000+ documents
   { name: 'get_dokument', description: 'Hämta detaljer om ett specifikt riksdagsdokument', inputSchema: getDokumentSchema },
   { name: 'get_ledamot', description: 'Hämta detaljer om en ledamot', inputSchema: getLedamotSchema },
   { name: 'get_motioner', description: 'Senaste motionerna', inputSchema: getMotionerSchema },
@@ -126,16 +129,17 @@ const TOOL_DEFINITIONS = [
   { name: 'get_data_dictionary', description: 'Visa dataset och fältbeskrivningar', inputSchema: getDataDictionarySchema },
 ];
 
-export function createMCPServer(logger?: any) {
+export function createMCPServer(externalLogger?: any) {
   const server = new Server(
     {
       name: 'riksdag-regering-mcp',
-      version: '2.1.0',
+      version: '2.2.0',
     },
     {
       capabilities: {
         tools: {},
         resources: {},
+        logging: {},
       },
     }
   );
@@ -150,13 +154,24 @@ export function createMCPServer(logger?: any) {
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const start = performance.now();
-    const def = TOOL_DEFINITIONS.find((tool) => tool.name === request.params.name);
+    const toolName = request.params.name;
+    const def = TOOL_DEFINITIONS.find((tool) => tool.name === toolName);
+
     if (!def) {
-      throw new Error(`Okänt verktyg: ${request.params.name}`);
+      const error = createSafeErrorResponse(
+        new Error(`Unknown tool: ${toolName}`),
+        toolName,
+        { availableTools: TOOL_DEFINITIONS.map((t) => t.name) }
+      );
+      throw error;
     }
 
     try {
+      // Parse and validate arguments
       const args = def.inputSchema.parse(request.params.arguments || {}) as any;
+
+      logger.info(`Executing tool: ${toolName}`, { args });
+
       let result: unknown;
       switch (def.name) {
         case 'search_ledamoter':
@@ -189,9 +204,7 @@ export function createMCPServer(logger?: any) {
         case 'analyze_g0v_by_department':
           result = await analyzeG0vByDepartment(args);
           break;
-        case 'get_all_g0v_documents':
-          result = await getAllG0vDocuments();
-          break;
+        // REMOVED: get_all_g0v_documents case - unsafe function removed in v2.2.0
         case 'search_voteringar':
           result = await searchVoteringar(args);
           break;
@@ -262,25 +275,77 @@ export function createMCPServer(logger?: any) {
           throw new Error(`Verktyget ${def.name} är inte implementerat.`);
       }
 
+      // Sanitize and validate response before returning
+      const sanitizedResult = sanitizeToolResponse(result, {
+        maxItems: 500,
+        truncateStrings: true,
+      });
+
+      // Log successful execution
       await logToolCall({
-        tool_name: def.name,
+        tool_name: toolName,
         status: 'success',
         duration_ms: performance.now() - start,
       });
 
-      // Return compact JSON to reduce token usage
-      return { content: [{ type: 'text', text: JSON.stringify(result) }] };
+      logger.info(`Tool executed successfully: ${toolName}`, {
+        duration: performance.now() - start,
+      });
+
+      // Return compact JSON to reduce token usage (with sanitized result)
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(sanitizedResult),
+          },
+        ],
+      };
     } catch (error) {
-      if (error instanceof ZodError) {
-        throw new Error(`Ogiltiga argument för ${def.name}: ${error.message}`);
-      }
+      const duration = performance.now() - start;
+
+      // Log error
       await logToolCall({
-        tool_name: def.name,
+        tool_name: toolName,
         status: 'error',
-        duration_ms: performance.now() - start,
+        duration_ms: duration,
         error_message: (error as Error).message,
       });
-      throw error;
+
+      logger.error(`Tool execution failed: ${toolName}`, {
+        error: (error as Error).message,
+        duration,
+      });
+
+      // Create safe error response
+      if (error instanceof ZodError) {
+        const safeError = createSafeErrorResponse(
+          new Error(`Invalid arguments for ${toolName}`),
+          toolName,
+          {
+            validationErrors: error.errors.map((e) => ({
+              path: e.path.join('.'),
+              message: e.message,
+            })),
+          }
+        );
+        throw new Error(JSON.stringify(safeError));
+      }
+
+      if (error instanceof ResponseTooLargeError) {
+        const safeError = createSafeErrorResponse(error, toolName, {
+          actualSize: error.actualSize,
+          maxSize: error.maxSize,
+        });
+        throw new Error(JSON.stringify(safeError));
+      }
+
+      // Generic error
+      const safeError = createSafeErrorResponse(
+        error as Error,
+        toolName
+      );
+      throw new Error(JSON.stringify(safeError));
     }
   });
 
