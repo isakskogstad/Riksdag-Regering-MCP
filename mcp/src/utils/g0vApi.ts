@@ -166,14 +166,31 @@ export async function fetchG0vDocumentContent(
 ): Promise<string> {
   await rateLimiter.waitForToken();
 
-  // Convert regeringen.se URL to g0v.se Markdown URL
-  const g0vUrl = regeringenUrl
-    .replace('https://www.regeringen.se', 'https://g0v.se')
-    .replace(/\/$/, '.md');
+  let g0vUrl: string;
+
+  // Check if it's already a full g0v.se URL
+  if (regeringenUrl.startsWith('https://g0v.se/')) {
+    g0vUrl = regeringenUrl.replace(/\/$/, '') + '.md';
+  }
+  // Check if it's a full regeringen.se URL
+  else if (regeringenUrl.startsWith('https://www.regeringen.se/') || regeringenUrl.startsWith('http://www.regeringen.se/')) {
+    g0vUrl = regeringenUrl
+      .replace('https://www.regeringen.se', 'https://g0v.se')
+      .replace('http://www.regeringen.se', 'https://g0v.se')
+      .replace(/\/$/, '') + '.md';
+  }
+  // Check if it's a relative URL starting with /
+  else if (regeringenUrl.startsWith('/')) {
+    g0vUrl = `https://g0v.se${regeringenUrl.replace(/\/$/, '')}.md`;
+  }
+  // Otherwise, it's just a slug - cannot construct a valid URL
+  else {
+    throw new Error(`Invalid URL format: "${regeringenUrl}". Expected full URL (https://www.regeringen.se/...) or relative URL (/pressmeddelanden/...). Received a slug without path context.`);
+  }
 
   const response = await fetch(g0vUrl);
   if (!response.ok) {
-    throw new Error(`Failed to fetch document content: ${response.statusText}`);
+    throw new Error(`Failed to fetch document from ${g0vUrl}: ${response.status} ${response.statusText}`);
   }
 
   return response.text();

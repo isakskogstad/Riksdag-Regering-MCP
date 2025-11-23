@@ -153,10 +153,26 @@ function buildDokumentFetcher(doktyp: string) {
       url: doc.dokument_url_html ? `https:${doc.dokument_url_html}` : doc.relurl,
     }));
 
-    return {
+    const response: any = {
       count: result.hits,
       dokument,
     };
+
+    // Add helpful notice when no results found
+    if (result.hits === 0) {
+      const doktypNames: Record<string, string> = {
+        mot: 'motioner',
+        prop: 'propositioner',
+        bet: 'betänkanden',
+        fr: 'frågor',
+        ip: 'interpellationer',
+      };
+      const doktypName = doktypNames[doktyp] || `dokument av typ ${doktyp}`;
+
+      response.notice = `Inga ${doktypName} hittades för rm=${args.rm || 'alla'}${args.organ ? `, organ=${args.organ}` : ''}. Detta kan bero på att inga dokument av denna typ har publicerats än för den valda perioden.`;
+    }
+
+    return response;
   };
 }
 
@@ -192,6 +208,7 @@ export async function getBetankanden(args: z.infer<typeof getBetankandenSchema>)
   });
 
   let filteredData = result.data;
+  const originalCount = result.data.length;
 
   // Apply client-side filtering for organ to ensure exact match
   if (args.organ) {
@@ -214,10 +231,23 @@ export async function getBetankanden(args: z.infer<typeof getBetankandenSchema>)
     url: doc.dokument_url_html ? `https:${doc.dokument_url_html}` : doc.relurl,
   }));
 
-  return {
+  const response: any = {
     count: filteredData.length,
     dokument,
   };
+
+  // Add helpful notice when no results found
+  if (filteredData.length === 0) {
+    if (originalCount > 0 && args.organ) {
+      // Had data before filtering, but organ filter removed everything
+      response.notice = `Inga betänkanden hittades för organ=${args.organ}${args.rm ? `, rm=${args.rm}` : ''}. Hittade ${originalCount} betänkanden totalt, men inget från det angivna organet.`;
+    } else {
+      // No data from API at all
+      response.notice = `Inga betänkanden hittades för rm=${args.rm || 'alla'}${args.organ ? `, organ=${args.organ}` : ''}. Detta kan bero på att utskottet ännu inte har avgett betänkanden för detta riksmöte.`;
+    }
+  }
+
+  return response;
 }
 
 export const getFragorSchema = z.object({
@@ -243,10 +273,17 @@ export async function getFragor(args: z.infer<typeof getFragorSchema>) {
     url: doc.dokument_url_html ? `https:${doc.dokument_url_html}` : doc.relurl,
   }));
 
-  return {
+  const response: any = {
     count: result.hits,
     dokument,
   };
+
+  // Add helpful notice when no results found
+  if (result.hits === 0) {
+    response.notice = `Inga frågor hittades för rm=${args.rm || 'alla'}. Detta kan bero på att inga frågor har ställts eller publicerats än för den valda perioden.`;
+  }
+
+  return response;
 }
 
 export const getInterpellationerSchema = z.object({
@@ -272,10 +309,17 @@ export async function getInterpellationer(args: z.infer<typeof getInterpellation
     url: doc.dokument_url_html ? `https:${doc.dokument_url_html}` : doc.relurl,
   }));
 
-  return {
+  const response: any = {
     count: result.hits,
     dokument,
   };
+
+  // Add helpful notice when no results found
+  if (result.hits === 0) {
+    response.notice = `Inga interpellationer hittades för rm=${args.rm || 'alla'}. Detta kan bero på att inga interpellationer har ställts eller publicerats än för den valda perioden.`;
+  }
+
+  return response;
 }
 
 export const getUtskottSchema = z.object({});
