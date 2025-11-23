@@ -50,12 +50,19 @@ import {
   getUtskottSchema,
 } from '../tools/fetch.js';
 import {
+  // New generic tools
+  getRegeringDocument,
+  getRegeringDocumentSchema,
+  summarizeRegeringDocument,
+  summarizeRegeringDocumentSchema,
+  // Deprecated legacy tools (kept for backwards compatibility)
   getPressmeddelande,
   getPressmeddelandeSchema,
-  getDokumentInnehall,
-  getDokumentInnehallSchema,
   summarizePressmeddelande,
   summarizePressmeddelandeSchema,
+  // Other content tools
+  getDokumentInnehall,
+  getDokumentInnehallSchema,
 } from '../tools/content.js';
 import {
   fetchPaginatedDocuments,
@@ -114,8 +121,12 @@ const TOOL_DEFINITIONS = [
   { name: 'get_fragor', description: 'Skriftliga frågor', inputSchema: getFragorSchema },
   { name: 'get_interpellationer', description: 'Interpellationer', inputSchema: getInterpellationerSchema },
   { name: 'get_utskott', description: 'Lista kända utskott', inputSchema: getUtskottSchema },
-  { name: 'get_pressmeddelande', description: 'Hämta pressmeddelande via g0v.se', inputSchema: getPressmeddelandeSchema },
-  { name: 'summarize_pressmeddelande', description: 'Enkel sammanfattning av pressmeddelande', inputSchema: summarizePressmeddelandeSchema },
+  // New generic government document tools
+  { name: 'get_regering_document', description: 'Hämta regeringsdokument (alla typer: pressmeddelanden, propositioner, SOU, etc.)', inputSchema: getRegeringDocumentSchema },
+  { name: 'summarize_regering_document', description: 'Sammanfatta regeringsdokument (alla typer)', inputSchema: summarizeRegeringDocumentSchema },
+  // Deprecated: Legacy pressmeddelande-specific tools (use get_regering_document instead)
+  { name: 'get_pressmeddelande', description: '[DEPRECATED] Använd get_regering_document istället', inputSchema: getPressmeddelandeSchema },
+  { name: 'summarize_pressmeddelande', description: '[DEPRECATED] Använd summarize_regering_document istället', inputSchema: summarizePressmeddelandeSchema },
   { name: 'get_dokument_innehall', description: 'Hämta dokumentinnehåll och sammanfattning', inputSchema: getDokumentInnehallSchema },
   { name: 'fetch_paginated_documents', description: 'Paginerad hämtning av dokument', inputSchema: fetchPaginatedDocumentsSchema },
   { name: 'fetch_paginated_anforanden', description: 'Paginerad hämtning av anföranden', inputSchema: fetchPaginatedAnforandenSchema },
@@ -232,6 +243,14 @@ export function createMCPServer(externalLogger?: any) {
         case 'get_utskott':
           result = await getUtskott();
           break;
+        // New generic government document tools
+        case 'get_regering_document':
+          result = await getRegeringDocument(args);
+          break;
+        case 'summarize_regering_document':
+          result = await summarizeRegeringDocument(args);
+          break;
+        // Deprecated legacy tools (kept for backwards compatibility)
         case 'get_pressmeddelande':
           result = await getPressmeddelande(args);
           break;
