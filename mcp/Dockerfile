@@ -13,6 +13,9 @@ COPY package*.json ./
 RUN npm install && \
     npm cache clean --force
 
+# Copy README.md from parent directory (needed for embed-readme.js)
+COPY ../README.md ./README.md
+
 # Copy source code
 COPY . .
 
