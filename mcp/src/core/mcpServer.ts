@@ -242,13 +242,6 @@ export function createMCPServer(externalLogger?: any) {
         case 'summarize_regering_document':
           result = await summarizeRegeringDocument(args);
           break;
-        // Deprecated legacy tools (kept for backwards compatibility)
-        case 'get_pressmeddelande':
-          result = await getPressmeddelande(args);
-          break;
-        case 'summarize_pressmeddelande':
-          result = await summarizePressmeddelande(args);
-          break;
         case 'get_dokument_innehall':
           result = await getDokumentInnehall(args);
           break;
