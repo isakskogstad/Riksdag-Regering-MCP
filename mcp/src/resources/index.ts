@@ -245,15 +245,29 @@ export async function getResource(uri: string) {
     }
 
     case 'docs://readme': {
-      // Try dist/README.md first (production), fallback to ../README.md (dev)
-      const distReadme = path.resolve(process.cwd(), 'README.md');
-      const rootReadme = path.resolve(process.cwd(), '..', 'README.md');
+      // Try multiple possible locations for README.md
+      const possiblePaths = [
+        path.resolve(__dirname, '..', 'README.md'),      // dist/README.md (production build)
+        path.resolve(process.cwd(), 'README.md'),         // ./README.md (if started from dist/)
+        path.resolve(process.cwd(), '..', 'README.md'),   // ../README.md (dev mode)
+        path.resolve(__dirname, '..', '..', 'README.md'), // ../../README.md (from dist/resources/)
+      ];
 
-      let content: string;
-      try {
-        content = await fs.readFile(distReadme, 'utf-8');
-      } catch {
-        content = await fs.readFile(rootReadme, 'utf-8');
+      let content: string | null = null;
+      let lastError: Error | null = null;
+
+      for (const filePath of possiblePaths) {
+        try {
+          content = await fs.readFile(filePath, 'utf-8');
+          break; // Success! Exit loop
+        } catch (error) {
+          lastError = error as Error;
+          continue; // Try next path
+        }
+      }
+
+      if (!content) {
+        throw new Error(`README.md not found. Tried paths: ${possiblePaths.join(', ')}. Last error: ${lastError?.message}`);
       }
 
       return {
