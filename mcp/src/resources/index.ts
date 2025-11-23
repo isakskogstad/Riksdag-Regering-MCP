@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { fetchLedamoterDirect, fetchDokumentDirect } from '../utils/riksdagenApi.js';
 import { fetchG0vDocuments } from '../utils/g0vApi.js';
 import { DATA_DICTIONARY } from '../data/dictionary.js';
@@ -7,6 +8,10 @@ import { WORKFLOW_GUIDE } from '../data/workflow.js';
 import { loadToolGuide } from '../data/toolGuide.js';
 import { RIKSMOTEN } from '../data/riksmoten.js';
 import { withCache } from '../utils/cache.js';
+
+// ES module equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 async function loadLedamoterSample() {
   const response = await fetchLedamoterDirect({ sz: 400 });
