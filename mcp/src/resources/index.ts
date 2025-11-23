@@ -8,6 +8,7 @@ import { WORKFLOW_GUIDE } from '../data/workflow.js';
 import { loadToolGuide } from '../data/toolGuide.js';
 import { RIKSMOTEN } from '../data/riksmoten.js';
 import { withCache } from '../utils/cache.js';
+import { EMBEDDED_README } from '../data/embeddedReadme.js';
 
 // ES module equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -250,35 +251,11 @@ export async function getResource(uri: string) {
     }
 
     case 'docs://readme': {
-      // Try multiple possible locations for README.md
-      const possiblePaths = [
-        path.resolve(__dirname, '..', 'README.md'),      // dist/README.md (production build)
-        path.resolve(process.cwd(), 'README.md'),         // ./README.md (if started from dist/)
-        path.resolve(process.cwd(), '..', 'README.md'),   // ../README.md (dev mode)
-        path.resolve(__dirname, '..', '..', 'README.md'), // ../../README.md (from dist/resources/)
-      ];
-
-      let content: string | null = null;
-      let lastError: Error | null = null;
-
-      for (const filePath of possiblePaths) {
-        try {
-          content = await fs.readFile(filePath, 'utf-8');
-          break; // Success! Exit loop
-        } catch (error) {
-          lastError = error as Error;
-          continue; // Try next path
-        }
-      }
-
-      if (!content) {
-        throw new Error(`README.md not found. Tried paths: ${possiblePaths.join(', ')}. Last error: ${lastError?.message}`);
-      }
-
+      // Use embedded README content (generated at build time)
       return {
         uri,
         mimeType: 'text/markdown',
-        text: content,
+        text: EMBEDDED_README,
       };
     }
 

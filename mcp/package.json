@@ -9,8 +9,8 @@
     "riksdag-regering-mcp": "./dist/index.js"
   },
   "scripts": {
-    "build": "tsc && npm run copy-assets && chmod +x dist/index.js",
-    "copy-assets": "mkdir -p dist/data && cp -f src/data/*.md dist/data/ 2>/dev/null || true && cp -f ../README.md dist/ 2>/dev/null || true",
+    "build": "node scripts/embed-readme.js && tsc && npm run copy-assets && chmod +x dist/index.js",
+    "copy-assets": "mkdir -p dist/data && cp -f src/data/*.md dist/data/ 2>/dev/null || true",
     "dev": "tsx src/server.ts",
     "dev:watch": "tsx watch src/server.ts",
     "start": "node dist/server.js",
