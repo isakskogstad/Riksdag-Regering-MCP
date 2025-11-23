@@ -2,10 +2,28 @@ import { z } from 'zod';
 import { stripHtml, truncate } from '../utils/helpers.js';
 import { fetchDokumentDirect } from '../utils/riksdagenApi.js';
 import { fetchG0vDocuments, fetchG0vDocumentContent } from '../utils/g0vApi.js';
+import { safeFetch } from '../utils/apiHelpers.js';
 
+const RIKSDAG_API_BASE = 'https://data.riksdagen.se';
+
+/**
+ * Hämta dokument direkt via dokument-ID endpoint (samma som get_dokument)
+ * Detta är mer pålitligt än att söka via dokumentlista
+ */
 async function loadDocument(dokId: string) {
-  const result = await fetchDokumentDirect({ sok: dokId, sz: 5 });
-  return result.data.find((doc: any) => doc.dok_id?.toLowerCase() === dokId.toLowerCase()) || null;
+  const url = `${RIKSDAG_API_BASE}/dokument/${dokId}.json`;
+  try {
+    const data = await safeFetch(url);
+    return data?.dokumentstatus?.dokument ?? null;
+  } catch (error) {
+    // If direct fetch fails, try searching as fallback
+    try {
+      const result = await fetchDokumentDirect({ sok: dokId, sz: 5 });
+      return result.data.find((doc: any) => doc.dok_id?.toLowerCase() === dokId.toLowerCase()) || null;
+    } catch {
+      return null;
+    }
+  }
 }
 
 async function loadDocumentText(doc: any): Promise<string | null> {
@@ -120,11 +138,11 @@ export async function getDokumentInnehall(args: z.infer<typeof getDokumentInneha
     const doc = await loadDocument(args.dok_id);
     if (!doc) {
       return {
-        error: `Dokument ${args.dok_id} hittades inte.`,
+        error: `Dokument ${args.dok_id} hittades inte i Riksdagens API.`,
         suggestions: [
-          'Kontrollera att dokument-ID är korrekt',
+          'Kontrollera att dokument-ID är korrekt (t.ex. HD0144, H901FiU1)',
           'Använd search_dokument för att hitta dokument',
-          'Använd get_dokument istället'
+          'Använd get_dokument för grundläggande metadata utan fulltext'
         ]
       };
     }
@@ -132,7 +150,16 @@ export async function getDokumentInnehall(args: z.infer<typeof getDokumentInneha
     const text = await loadDocumentText(doc);
     const cleanText = text ? stripHtml(text) : null;
 
-    return {
+    // Build proper URL avoiding double https: prefix
+    let url = doc.relurl || '';
+    if (doc.dokument_url_html) {
+      const htmlUrl = doc.dokument_url_html;
+      url = htmlUrl.startsWith('http://') || htmlUrl.startsWith('https://')
+        ? htmlUrl
+        : `https:${htmlUrl}`;
+    }
+
+    const result: any = {
       dok_id: doc.dok_id,
       titel: doc.titel,
       datum: doc.datum,
@@ -141,8 +168,16 @@ export async function getDokumentInnehall(args: z.infer<typeof getDokumentInneha
       summary: doc.summary,
       snippet: cleanText ? truncate(cleanText, 400) : null,
       text: args.include_full_text ? cleanText : null,
-      url: doc.dokument_url_html ? `https:${doc.dokument_url_html}` : doc.relurl,
+      url,
+      fulltext_available: !!cleanText,
     };
+
+    // Add notice if fulltext is not available
+    if (!cleanText) {
+      result.notice = 'Fulltext kunde inte hämtas för detta dokument. Metadata och summary är tillgängliga.';
+    }
+
+    return result;
   } catch (error) {
     return {
       error: `Fel vid hämtning av dokumentinnehåll: ${error instanceof Error ? error.message : String(error)}`,

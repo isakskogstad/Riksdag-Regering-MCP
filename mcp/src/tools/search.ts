@@ -225,6 +225,7 @@ export async function searchAnforanden(args: z.infer<typeof searchAnforandenSche
   });
 
   let filteredData = response.data;
+  const originalCount = response.data.length;
 
   // Apply client-side filtering for talare if specified
   if (args.talare) {
@@ -257,13 +258,31 @@ export async function searchAnforanden(args: z.infer<typeof searchAnforandenSche
     debatt: item.avsnittsrubrik,
   }));
 
+  // Build notices
+  const notices: string[] = [];
+
   // Check if any anföranden have empty text
   const hasEmptyText = anforanden.some(a => !a.anforandetext || a.anforandetext.trim() === '');
+  if (hasEmptyText && anforanden.length > 0) {
+    notices.push('OBS: Vissa eller alla anföranden kan ha tomt textfält. Detta är en begränsning i Riksdagens API som inte alltid returnerar fulltext för anföranden. Använd anforande_id och debatt-namn för att identifiera anföranden.');
+  }
+
+  // Check if filtering resulted in no results
+  if (filteredData.length === 0) {
+    if (originalCount > 0 && (args.talare || args.text)) {
+      // Had data before filtering, but filtering removed everything
+      notices.push(`Inga träffar efter filtrering. Hittade ${originalCount} anföranden för parti=${args.parti || 'alla'}, rm=${args.rm || 'alla'}, men inget matchade ${args.talare ? `talare="${args.talare}"` : ''}${args.talare && args.text ? ' och ' : ''}${args.text ? `text="${args.text}"` : ''}.`);
+      notices.push('Tips: Text-sökningen i search_anforanden är begränsad. Prova fetch_paginated_anforanden för mer robust textsökning, eller minska filtreringen.');
+    } else if (originalCount === 0) {
+      // No data from API at all
+      notices.push(`Inga anföranden hittades för parti=${args.parti || 'alla'}, rm=${args.rm || 'alla'}. Detta kan bero på att parametrarna inte matchar några anföranden i Riksdagens databas.`);
+    }
+  }
 
   return {
     count: filteredData.length, // Return actual filtered count
     anforanden,
-    notice: hasEmptyText ? 'OBS: Vissa eller alla anföranden kan ha tomt textfält. Detta är en begränsning i Riksdagens API som inte alltid returnerar fulltext för anföranden. Använd anforande_id och debatt-namn för att identifiera anföranden.' : undefined,
+    notice: notices.length > 0 ? notices.join(' ') : undefined,
   };
 }
 

@@ -55,10 +55,42 @@ export async function getVotingGroup(args: z.infer<typeof getVotingGroupSchema>)
 
     const groupedResults = Object.values(grouped);
 
+    // If no results, check if it's because no voting exists or no individual data
+    if (groupedResults.length === 0) {
+      // Try to check if the voting itself exists by fetching without grouping
+      const checkResult = await fetchVoteringarDirect({
+        rm: args.rm,
+        bet: args.bet,
+        punkt: args.punkt,
+        sz: 1,
+      });
+
+      let dataStatus: string;
+      let notice: string;
+
+      if (checkResult.hits === 0) {
+        dataStatus = 'no_matching_voting';
+        notice = `Ingen votering hittades för rm=${args.rm || 'alla'}, bet=${args.bet || 'alla'}, punkt=${args.punkt || 'alla'}. Kontrollera att parametrarna är korrekta.`;
+      } else {
+        dataStatus = 'no_individual_votes_available';
+        notice = 'Voteringen existerar men inga individuella röster finns tillgängliga för gruppering. Detta kan bero på att röstdata inte har synkats eller publicerats än.';
+      }
+
+      return {
+        count: 0,
+        groupBy: args.groupBy,
+        voteringar: [],
+        dataStatus,
+        notice,
+        message: `Grupperade 0 grupper per ${args.groupBy}`,
+      };
+    }
+
     return {
       count: groupedResults.length,
       groupBy: args.groupBy,
       voteringar: groupedResults,
+      dataStatus: 'success',
       message: `Grupperade ${groupedResults.length} grupper per ${args.groupBy}`,
     };
   } else {
@@ -70,10 +102,20 @@ export async function getVotingGroup(args: z.infer<typeof getVotingGroupSchema>)
       sz: limit,
     });
 
-    return {
+    // Add status information even when not grouping
+    const response: any = {
       count: result.hits,
       voteringar: result.data,
       message: `Hämtade ${result.data.length} individuella röster`,
     };
+
+    if (result.hits === 0) {
+      response.dataStatus = 'no_matching_voting';
+      response.notice = `Ingen votering hittades för rm=${args.rm || 'alla'}, bet=${args.bet || 'alla'}, punkt=${args.punkt || 'alla'}. Kontrollera att parametrarna är korrekta.`;
+    } else {
+      response.dataStatus = 'success';
+    }
+
+    return response;
   }
 }
