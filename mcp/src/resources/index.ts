@@ -6,6 +6,7 @@ import { DATA_DICTIONARY } from '../data/dictionary.js';
 import { WORKFLOW_GUIDE } from '../data/workflow.js';
 import { loadToolGuide } from '../data/toolGuide.js';
 import { RIKSMOTEN } from '../data/riksmoten.js';
+import { withCache } from '../utils/cache.js';
 
 async function loadLedamoterSample() {
   const response = await fetchLedamoterDirect({ sz: 400 });
@@ -91,7 +92,12 @@ export async function listResources() {
 export async function getResource(uri: string) {
   switch (uri) {
     case 'riksdagen://ledamoter': {
-      const sample = await loadLedamoterSample();
+      // Cache i 24 timmar - ledamotlista ändras sällan
+      const sample = await withCache(
+        'resource:ledamoter',
+        () => loadLedamoterSample(),
+        24 * 60 * 60
+      );
       return {
         uri,
         mimeType: 'application/json',
@@ -100,24 +106,33 @@ export async function getResource(uri: string) {
     }
 
     case 'riksdagen://partier': {
-      const sample = await loadLedamoterSample();
-      const stats: Record<string, number> = {};
-      sample.ledamoter.forEach((person: any) => {
-        if (person.parti) {
-          stats[person.parti] = (stats[person.parti] || 0) + 1;
-        }
-      });
+      // Cache i 24 timmar - partistatistik ändras sällan
+      const result = await withCache(
+        'resource:partier',
+        async () => {
+          const sample = await loadLedamoterSample();
+          const stats: Record<string, number> = {};
+          sample.ledamoter.forEach((person: any) => {
+            if (person.parti) {
+              stats[person.parti] = (stats[person.parti] || 0) + 1;
+            }
+          });
 
-      const partier = Object.keys(stats).sort().map((parti) => ({
-        parti,
-        ledamoter: stats[parti],
-        andel: stats[parti] / sample.total,
-      }));
+          const partier = Object.keys(stats).sort().map((parti) => ({
+            parti,
+            ledamoter: stats[parti],
+            andel: stats[parti] / sample.total,
+          }));
+
+          return { totalPartier: partier.length, partier };
+        },
+        24 * 60 * 60
+      );
 
       return {
         uri,
         mimeType: 'application/json',
-        text: JSON.stringify({ totalPartier: partier.length, partier }, null, 2),
+        text: JSON.stringify(result, null, 2),
       };
     }
 
@@ -151,38 +166,56 @@ export async function getResource(uri: string) {
     }
 
     case 'regeringen://departement': {
-      const press = await fetchG0vDocuments('pressmeddelanden', { limit: 500 });
-      const prop = await fetchG0vDocuments('propositioner', { limit: 500 });
-      const stats: Record<string, number> = {};
-      [...press, ...prop].forEach((doc) => {
-        if (doc.sender) {
-          stats[doc.sender] = (stats[doc.sender] || 0) + 1;
-        }
-      });
-      const departement = Object.keys(stats).sort().map((namn) => ({ namn, antalDokument: stats[namn] }));
+      // Cache i 6 timmar - regeringsdokument uppdateras dagligen
+      const result = await withCache(
+        'resource:departement',
+        async () => {
+          const press = await fetchG0vDocuments('pressmeddelanden', { limit: 500 });
+          const prop = await fetchG0vDocuments('propositioner', { limit: 500 });
+          const stats: Record<string, number> = {};
+          [...press, ...prop].forEach((doc) => {
+            if (doc.sender) {
+              stats[doc.sender] = (stats[doc.sender] || 0) + 1;
+            }
+          });
+          const departement = Object.keys(stats).sort().map((namn) => ({ namn, antalDokument: stats[namn] }));
+          return { totalDepartement: departement.length, departement };
+        },
+        6 * 60 * 60
+      );
+
       return {
         uri,
         mimeType: 'application/json',
-        text: JSON.stringify({ totalDepartement: departement.length, departement }, null, 2),
+        text: JSON.stringify(result, null, 2),
       };
     }
 
     case 'riksdagen://statistik': {
-      const [ledamoter, dokument] = await Promise.all([
-        fetchLedamoterDirect({ sz: 1 }),
-        fetchDokumentDirect({ sz: 1 }),
-      ]);
+      // Cache i 6 timmar - statistik behöver inte vara realtid
+      const result = await withCache(
+        'resource:statistik',
+        async () => {
+          const [ledamoter, dokument] = await Promise.all([
+            fetchLedamoterDirect({ sz: 1 }),
+            fetchDokumentDirect({ sz: 1 }),
+          ]);
+
+          return {
+            generated_at: new Date().toISOString(),
+            totals: {
+              ledamoter: ledamoter.hits,
+              dokument: dokument.hits,
+            },
+          };
+        },
+        6 * 60 * 60
+      );
 
       return {
         uri,
         mimeType: 'application/json',
-        text: JSON.stringify({
-          generated_at: new Date().toISOString(),
-          totals: {
-            ledamoter: ledamoter.hits,
-            dokument: dokument.hits,
-          },
-        }, null, 2),
+        text: JSON.stringify(result, null, 2),
       };
     }
 

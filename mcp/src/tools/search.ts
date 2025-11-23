@@ -11,6 +11,7 @@ import {
 } from '../utils/riksdagenApi.js';
 import { normalizeLimit, stripHtml, truncate } from '../utils/helpers.js';
 import { fetchG0vDocuments, searchG0vAllTypes } from '../utils/g0vApi.js';
+import { withCache } from '../utils/cache.js';
 
 function splitName(name?: string): { fnamn?: string; enamn?: string } {
   if (!name || !name.trim()) return {};
@@ -44,47 +45,64 @@ export async function searchLedamoter(args: z.infer<typeof searchLedamoterSchema
   const searchTerm = args.namn?.trim().toLowerCase();
   const isSingleWordSearch = searchTerm && !fnamn && !enamn;
 
-  const response = await fetchLedamoterDirect({
-    fnamn: fnamn || undefined,
-    enamn: enamn || undefined,
-    parti: args.parti || undefined,
-    valkrets: args.valkrets || undefined,
-    rdlstatus: args.status || undefined,
-    iid: args.intressent_id || undefined,
-    p: args.page,
-    sz: isSingleWordSearch ? 200 : limit, // Fetch more for client-side filtering
-  });
+  // Cache key baserat på alla parametrar
+  const cacheKey = `ledamoter:${JSON.stringify({
+    fnamn,
+    enamn,
+    parti: args.parti,
+    valkrets: args.valkrets,
+    status: args.status,
+    iid: args.intressent_id,
+    page: args.page,
+    limit,
+    isSingleWordSearch,
+    searchTerm,
+  })}`;
 
-  let filteredData = response.data;
-
-  // Client-side filtering for single word name searches
-  if (isSingleWordSearch && searchTerm) {
-    filteredData = response.data.filter((person) => {
-      const fullName = `${person.tilltalsnamn} ${person.efternamn}`.toLowerCase();
-      const firstName = person.tilltalsnamn?.toLowerCase() || '';
-      const lastName = person.efternamn?.toLowerCase() || '';
-      return fullName.includes(searchTerm) ||
-             firstName.includes(searchTerm) ||
-             lastName.includes(searchTerm);
+  // Cache i 24 timmar - ledamotdata ändras sällan
+  return withCache(cacheKey, async () => {
+    const response = await fetchLedamoterDirect({
+      fnamn: fnamn || undefined,
+      enamn: enamn || undefined,
+      parti: args.parti || undefined,
+      valkrets: args.valkrets || undefined,
+      rdlstatus: args.status || undefined,
+      iid: args.intressent_id || undefined,
+      p: args.page,
+      sz: isSingleWordSearch ? 200 : limit, // Fetch more for client-side filtering
     });
-  }
 
-  // Apply limit after filtering
-  const limitedData = filteredData.slice(0, limit);
+    let filteredData = response.data;
 
-  const ledamoter = limitedData.map((person) => ({
-    intressent_id: person.intressent_id,
-    namn: `${person.tilltalsnamn} ${person.efternamn}`.trim(),
-    parti: person.parti,
-    valkrets: person.valkrets,
-    status: person.status,
-    bild_url: person.bild_url_192 || person.bild_url_80,
-  }));
+    // Client-side filtering for single word name searches
+    if (isSingleWordSearch && searchTerm) {
+      filteredData = response.data.filter((person) => {
+        const fullName = `${person.tilltalsnamn} ${person.efternamn}`.toLowerCase();
+        const firstName = person.tilltalsnamn?.toLowerCase() || '';
+        const lastName = person.efternamn?.toLowerCase() || '';
+        return fullName.includes(searchTerm) ||
+               firstName.includes(searchTerm) ||
+               lastName.includes(searchTerm);
+      });
+    }
 
-  return {
-    count: isSingleWordSearch ? filteredData.length : response.hits,
-    ledamoter,
-  };
+    // Apply limit after filtering
+    const limitedData = filteredData.slice(0, limit);
+
+    const ledamoter = limitedData.map((person) => ({
+      intressent_id: person.intressent_id,
+      namn: `${person.tilltalsnamn} ${person.efternamn}`.trim(),
+      parti: person.parti,
+      valkrets: person.valkrets,
+      status: person.status,
+      bild_url: person.bild_url_192 || person.bild_url_80,
+    }));
+
+    return {
+      count: isSingleWordSearch ? filteredData.length : response.hits,
+      ledamoter,
+    };
+  }, 24 * 60 * 60); // 24 timmar TTL
 }
 
 export const searchDokumentSchema = z.object({
@@ -119,51 +137,58 @@ export const searchDokumentSchema = z.object({
 
 export async function searchDokument(args: z.infer<typeof searchDokumentSchema>) {
   const limit = normalizeLimit(args.limit, 50);
-  const result = await fetchDokumentDirect({
-    doktyp: args.doktyp,
-    typ: args.typ,
-    subtyp: args.subtyp,
-    sok: args.titel,
-    rm: args.rm,
-    organ: args.organ,
-    bet: args.bet,
-    tempbeteckning: args.tempbeteckning,
-    nummer: args.nummer,
-    iid: args.iid,
-    parti: args.parti,
-    talare: args.talare,
-    mottagare: args.mottagare,
-    from: args.from_date,
-    tom: args.to_date,
-    status: args.status,
-    subtitle: args.subtitle,
-    relaterat_id: args.relaterat_id,
-    avd: args.avd,
-    webbtv: args.webbtv ? 'true' : undefined,
-    exakt: args.exakt ? 'true' : undefined,
-    planering: args.planering ? 'true' : undefined,
-    facets: args.facets,
-    rapport: args.rapport,
-    sort: args.sort,
-    sortorder: args.sortorder,
-    sz: limit,
-  });
 
-  const dokument = result.data.map((doc) => ({
-    dok_id: doc.dok_id,
-    titel: doc.titel,
-    datum: doc.datum,
-    doktyp: doc.doktyp,
-    rm: doc.rm,
-    organ: doc.organ,
-    summary: doc.summary,
-    url: doc.dokument_url_html ? `https:${doc.dokument_url_html}` : doc.relurl,
-  }));
+  // Cache key baserat på alla parametrar
+  const cacheKey = `dokument:${JSON.stringify(args)}`;
 
-  return {
-    count: result.hits,
-    dokument,
-  };
+  // Cache i 6 timmar - nya dokument publiceras dagligen
+  return withCache(cacheKey, async () => {
+    const result = await fetchDokumentDirect({
+      doktyp: args.doktyp,
+      typ: args.typ,
+      subtyp: args.subtyp,
+      sok: args.titel,
+      rm: args.rm,
+      organ: args.organ,
+      bet: args.bet,
+      tempbeteckning: args.tempbeteckning,
+      nummer: args.nummer,
+      iid: args.iid,
+      parti: args.parti,
+      talare: args.talare,
+      mottagare: args.mottagare,
+      from: args.from_date,
+      tom: args.to_date,
+      status: args.status,
+      subtitle: args.subtitle,
+      relaterat_id: args.relaterat_id,
+      avd: args.avd,
+      webbtv: args.webbtv ? 'true' : undefined,
+      exakt: args.exakt ? 'true' : undefined,
+      planering: args.planering ? 'true' : undefined,
+      facets: args.facets,
+      rapport: args.rapport,
+      sort: args.sort,
+      sortorder: args.sortorder,
+      sz: limit,
+    });
+
+    const dokument = result.data.map((doc) => ({
+      dok_id: doc.dok_id,
+      titel: doc.titel,
+      datum: doc.datum,
+      doktyp: doc.doktyp,
+      rm: doc.rm,
+      organ: doc.organ,
+      summary: doc.summary,
+      url: doc.dokument_url_html ? `https:${doc.dokument_url_html}` : doc.relurl,
+    }));
+
+    return {
+      count: result.hits,
+      dokument,
+    };
+  }, 6 * 60 * 60); // 6 timmar TTL
 }
 
 export const searchDokumentFulltextSchema = z.object({
@@ -453,54 +478,60 @@ function summarizeDocument(doc: any) {
 export async function searchRegering(args: z.infer<typeof searchRegeringSchema>) {
   const limit = normalizeLimit(args.limit, 10); // Reduced default from 20 to 10
 
-  if (args.type) {
-    const documents = await fetchG0vDocuments(args.type as any, {
-      limit: args.departement ? limit * 3 : limit, // Fetch more if filtering
-      search: args.title,
+  // Cache key baserat på alla parametrar
+  const cacheKey = `regering:${JSON.stringify(args)}`;
+
+  // Cache i 15 minuter - regeringsdokument kan publiceras när som helst
+  return withCache(cacheKey, async () => {
+    if (args.type) {
+      const documents = await fetchG0vDocuments(args.type as any, {
+        limit: args.departement ? limit * 3 : limit, // Fetch more if filtering
+        search: args.title,
+        dateFrom: args.dateFrom,
+        dateTo: args.dateTo,
+      });
+
+      const filtered = args.departement
+        ? documents.filter((doc) => matchesDepartement(doc, args.departement!))
+        : documents;
+
+      // Return only essential fields
+      const summaries = filtered.slice(0, limit).map(summarizeDocument);
+
+      return {
+        type: args.type,
+        count: summaries.length,
+        documents: summaries,
+      };
+    }
+
+    const results = await searchG0vAllTypes(args.title || '', {
+      limit,
+      types: ['pressmeddelanden', 'propositioner', 'sou', 'ds', 'rapporter', 'tal', 'remisser'],
       dateFrom: args.dateFrom,
       dateTo: args.dateTo,
     });
 
-    const filtered = args.departement
-      ? documents.filter((doc) => matchesDepartement(doc, args.departement!))
-      : documents;
+    // Apply department filtering and create summaries
+    const processedResults: any = {};
+    Object.keys(results).forEach((key) => {
+      let docs = results[key as keyof typeof results];
 
-    // Return only essential fields
-    const summaries = filtered.slice(0, limit).map(summarizeDocument);
+      if (args.departement) {
+        docs = docs.filter((doc) => matchesDepartement(doc, args.departement!));
+      }
+
+      // Return only essential fields
+      processedResults[key] = docs.map(summarizeDocument);
+    });
+
+    const totals = Object.fromEntries(
+      Object.entries(processedResults).map(([key, docs]) => [key, (docs as any[]).length])
+    );
 
     return {
-      type: args.type,
-      count: summaries.length,
-      documents: summaries,
+      totals,
+      results: processedResults,
     };
-  }
-
-  const results = await searchG0vAllTypes(args.title || '', {
-    limit,
-    types: ['pressmeddelanden', 'propositioner', 'sou', 'ds', 'rapporter', 'tal', 'remisser'],
-    dateFrom: args.dateFrom,
-    dateTo: args.dateTo,
-  });
-
-  // Apply department filtering and create summaries
-  const processedResults: any = {};
-  Object.keys(results).forEach((key) => {
-    let docs = results[key as keyof typeof results];
-
-    if (args.departement) {
-      docs = docs.filter((doc) => matchesDepartement(doc, args.departement!));
-    }
-
-    // Return only essential fields
-    processedResults[key] = docs.map(summarizeDocument);
-  });
-
-  const totals = Object.fromEntries(
-    Object.entries(processedResults).map(([key, docs]) => [key, (docs as any[]).length])
-  );
-
-  return {
-    totals,
-    results: processedResults,
-  };
+  }, 15 * 60); // 15 minuter TTL
 }

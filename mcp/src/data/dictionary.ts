@@ -15,6 +15,7 @@ export const DATA_DICTIONARY = {
   datasets: [
     {
       id: 'riksdagen_ledamoter',
+      alias: 'ledamoter',  // Kortare alias för enklare användning
       title: 'Ledamöter',
       fields: ['intressent_id', 'tilltalsnamn', 'efternamn', 'parti', 'valkrets', 'status', 'bild_url'],
       description: 'Grunddata om nuvarande och historiska ledamöter. Uppdateras dagligen från Riksdagens API.',
@@ -22,6 +23,7 @@ export const DATA_DICTIONARY = {
     },
     {
       id: 'riksdagen_dokument',
+      alias: 'dokument',  // Kortare alias för enklare användning
       title: 'Riksdagens dokument',
       fields: ['dok_id', 'doktyp', 'rm', 'beteckning', 'titel', 'datum', 'organ'],
       description: 'Samlar motioner, propositioner, betänkanden m.m. Hämtas via data.riksdagen.se/dokumentlista.',

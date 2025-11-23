@@ -7,7 +7,10 @@ export const getDataDictionarySchema = z.object({
 
 export function getDataDictionary(args: z.infer<typeof getDataDictionarySchema>) {
   if (args.dataset) {
-    const match = DATA_DICTIONARY.datasets.find((d) => d.id === args.dataset);
+    // Matcha både på id och alias
+    const match = DATA_DICTIONARY.datasets.find(
+      (d: any) => d.id === args.dataset || d.alias === args.dataset
+    );
     if (!match) {
       throw new Error(`Dataset ${args.dataset} saknas i dictionaryt`);
     }
