@@ -245,8 +245,17 @@ export async function getResource(uri: string) {
     }
 
     case 'docs://readme': {
-      const readmePath = path.resolve(process.cwd(), '..', 'README.md');
-      const content = await fs.readFile(readmePath, 'utf-8');
+      // Try dist/README.md first (production), fallback to ../README.md (dev)
+      const distReadme = path.resolve(process.cwd(), 'README.md');
+      const rootReadme = path.resolve(process.cwd(), '..', 'README.md');
+
+      let content: string;
+      try {
+        content = await fs.readFile(distReadme, 'utf-8');
+      } catch {
+        content = await fs.readFile(rootReadme, 'utf-8');
+      }
+
       return {
         uri,
         mimeType: 'text/markdown',
