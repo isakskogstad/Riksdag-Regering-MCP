@@ -14,56 +14,20 @@
 
 ## 📊 Översikt
 
-### Totalt antal verktyg: **32**
+### Totalt antal tools: **32**
 
-MCP-servern exponerar 32 specialiserade verktyg fördelade över två huvudkategorier:
+MCP-servern exponerar 32 specialiserade verktyg för att hämta data och underlag, som exempelvis:
 
-<table>
-<tr>
-<td width="50%" valign="top">
+- **Ledamöter** – Information, aktiviteter, uppdrag m.m.
+- **Riksdagsdokument**  – Motioner, skriftliga frågor m.m.
+- **Anföranden**  – Följ vad som sagts i kammaren m.m.
+- **Voteringar**  – Så röstar ledamöterna
+- **Regeringsdokument**  – Ex. SOU, propositioner, pressmeddelanden
 
-### 🏛️ Riksdagen (18 verktyg)
 
-| Verktyg | Beskrivning |
-|---------|-------------|
-| `search_ledamoter` | Sök efter ledamöter med filter |
-| `search_dokument` | Sök riksdagsdokument |
-| `search_dokument_fulltext` | Fulltextsök i dokument |
-| `search_anforanden` | Sök anföranden från debatter |
-| `search_voteringar` | Sök voteringar och röster |
-| `get_dokument` | Hämta specifikt dokument |
-| `get_ledamot` | Hämta ledamotsinformation |
-| `get_propositioner` | Hämta propositioner |
-| `get_motioner` | Hämta motioner |
-| `get_betankanden` | Hämta betänkanden |
 
-**Andra verktyg:** `get_fragor`, `get_interpellationer`, `get_utskott`, `get_calendar_events`, `get_voting_group`, `fetch_paginated_documents`, `fetch_paginated_anforanden`, `batch_fetch_documents`
 
-</td>
-<td width="50%" valign="top">
-
-### 🏢 Regeringskansliet (14 verktyg)
-
-| Verktyg | Beskrivning |
-|---------|-------------|
-| `search_regering` | Sök regeringsdokument |
-| `get_pressmeddelande` | Hämta pressmeddelande |
-| `summarize_pressmeddelande` | Sammanfatta pressmeddelande |
-| `get_g0v_document_content` | Hämta dokumentinnehåll (Markdown) |
-| `get_g0v_document_types` | Lista dokumenttyper |
-| `get_g0v_category_codes` | Hämta kategorikoder |
-| `analyze_g0v_by_department` | Analysera per departement |
-| `enhanced_government_search` | Kombinerad sökning |
-| `get_g0v_latest_update` | Senaste uppdatering |
-| `get_dokument_innehall` | Dokumentinnehåll + sammanfattning |
-
-**Andra verktyg:** `list_reports`, `fetch_report`, `get_sync_status`, `get_data_dictionary`
-
-</td>
-</tr>
-</table>
-
-### 🔍 Datakällor
+### Datakällor
 
 - **Riksdagen:** [data.riksdagen.se](https://data.riksdagen.se) - Officiellt öppet API
 - **Regeringen:** [g0v.se](https://g0v.se) - Öppen data från Regeringskansliet
