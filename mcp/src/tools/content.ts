@@ -28,6 +28,20 @@ export const getPressmeddelandeSchema = z.object({
 
 export async function getPressmeddelande(args: z.infer<typeof getPressmeddelandeSchema>) {
   try {
+    // If it's a full regeringen.se URL, use it directly
+    if (args.document_id.toLowerCase().includes('regeringen.se')) {
+      const content = await fetchG0vDocumentContent(args.document_id);
+      return {
+        titel: 'Pressmeddelande',
+        publicerad: null,
+        avsandare: null,
+        url: args.document_id,
+        typ: 'pressmeddelanden',
+        markdown: content,
+        notice: 'Hämtade dokument direkt via URL. Metadata kan vara begränsad.'
+      };
+    }
+
     const data = await fetchG0vDocuments('pressmeddelanden', { limit: 500 });
     const searchLower = args.document_id.toLowerCase();
 
@@ -39,11 +53,16 @@ export async function getPressmeddelande(args: z.infer<typeof getPressmeddelande
         return doc.url.toLowerCase() === searchLower;
       }
 
-      // Try to match last segment of URL path
-      const docUrlSegment = doc.url.split('/').filter(Boolean).pop();
-      const searchSegment = searchLower.split('/').filter(Boolean).pop();
-      if (docUrlSegment && searchSegment && docUrlSegment.toLowerCase() === searchSegment) {
-        return true;
+      // Try to match URL slug (last meaningful part of URL)
+      const docSlug = doc.url.split('/').filter(Boolean).pop()?.toLowerCase();
+      const searchSlug = searchLower.split('/').filter(Boolean).pop()?.toLowerCase();
+      if (docSlug && searchSlug) {
+        // Exact slug match
+        if (docSlug === searchSlug) return true;
+        // Slug contains search term
+        if (docSlug.includes(searchSlug)) return true;
+        // Search term contains slug (for shorter IDs)
+        if (searchSlug.includes(docSlug)) return true;
       }
 
       // Try exact title match
@@ -51,17 +70,23 @@ export async function getPressmeddelande(args: z.infer<typeof getPressmeddelande
         return true;
       }
 
-      // Fallback to title includes
-      return doc.title && doc.title.toLowerCase().includes(searchLower);
+      // Fallback to title includes (but require more than 3 chars to avoid too broad matches)
+      if (searchLower.length > 3) {
+        return doc.title && doc.title.toLowerCase().includes(searchLower);
+      }
+
+      return false;
     });
 
     if (!match || !match.url) {
       return {
         error: `Pressmeddelandet "${args.document_id}" hittades inte via g0v.se.`,
+        searched_in: `${data.length} pressmeddelanden`,
         suggestions: [
-          'Prova med en mer specifik sökterm',
-          'Använd full URL från regeringen.se',
-          'Använd search_regering för att hitta pressmeddelanden'
+          'Använd en mer specifik sökterm (minst 4 tecken)',
+          'Använd full URL från regeringen.se (t.ex. från search_regering)',
+          'Prova med search_regering först för att hitta exakt URL',
+          'Exempel: använd hela URL-sluggen från regeringen.se'
         ]
       };
     }
@@ -80,7 +105,7 @@ export async function getPressmeddelande(args: z.infer<typeof getPressmeddelande
     return {
       error: `Kunde inte hämta pressmeddelande: ${error instanceof Error ? error.message : String(error)}`,
       document_id: args.document_id,
-      suggestions: ['Försök igen om en stund', 'Använd search_regering istället']
+      suggestions: ['Försök igen om en stund', 'Använd search_regering istället', 'Kontrollera att URL:en är korrekt']
     };
   }
 }
@@ -134,6 +159,22 @@ export const summarizePressmeddelandeSchema = z.object({
 
 export async function summarizePressmeddelande(args: z.infer<typeof summarizePressmeddelandeSchema>) {
   try {
+    // If it's a full regeringen.se URL, use it directly
+    if (args.document_id.toLowerCase().includes('regeringen.se')) {
+      const markdown = await fetchG0vDocumentContent(args.document_id);
+      const clean = stripHtml(markdown || '');
+      return {
+        meta: {
+          titel: 'Pressmeddelande',
+          publicerad: null,
+          url: args.document_id,
+          departement: null,
+        },
+        summary: truncate(clean, args.max_length || 500),
+        notice: 'Hämtade dokument direkt via URL. Metadata kan vara begränsad.'
+      };
+    }
+
     const data = await fetchG0vDocuments('pressmeddelanden', { limit: 500 });
     const searchLower = args.document_id.toLowerCase();
 
@@ -145,11 +186,16 @@ export async function summarizePressmeddelande(args: z.infer<typeof summarizePre
         return doc.url.toLowerCase() === searchLower;
       }
 
-      // Try to match last segment of URL path
-      const docUrlSegment = doc.url.split('/').filter(Boolean).pop();
-      const searchSegment = searchLower.split('/').filter(Boolean).pop();
-      if (docUrlSegment && searchSegment && docUrlSegment.toLowerCase() === searchSegment) {
-        return true;
+      // Try to match URL slug (last meaningful part of URL)
+      const docSlug = doc.url.split('/').filter(Boolean).pop()?.toLowerCase();
+      const searchSlug = searchLower.split('/').filter(Boolean).pop()?.toLowerCase();
+      if (docSlug && searchSlug) {
+        // Exact slug match
+        if (docSlug === searchSlug) return true;
+        // Slug contains search term
+        if (docSlug.includes(searchSlug)) return true;
+        // Search term contains slug (for shorter IDs)
+        if (searchSlug.includes(docSlug)) return true;
       }
 
       // Try exact title match
@@ -157,17 +203,23 @@ export async function summarizePressmeddelande(args: z.infer<typeof summarizePre
         return true;
       }
 
-      // Fallback to title includes
-      return doc.title && doc.title.toLowerCase().includes(searchLower);
+      // Fallback to title includes (but require more than 3 chars)
+      if (searchLower.length > 3) {
+        return doc.title && doc.title.toLowerCase().includes(searchLower);
+      }
+
+      return false;
     });
 
     if (!match || !match.url) {
       return {
         error: `Pressmeddelandet "${args.document_id}" hittades inte.`,
+        searched_in: `${data.length} pressmeddelanden`,
         suggestions: [
-          'Prova med en mer specifik sökterm',
-          'Använd full URL från regeringen.se',
-          'Använd get_pressmeddelande eller search_regering istället'
+          'Använd en mer specifik sökterm (minst 4 tecken)',
+          'Använd full URL från regeringen.se (t.ex. från search_regering)',
+          'Prova med search_regering först för att hitta exakt URL',
+          'Använd get_pressmeddelande för fullständigt innehåll'
         ]
       };
     }
@@ -188,7 +240,7 @@ export async function summarizePressmeddelande(args: z.infer<typeof summarizePre
     return {
       error: `Kunde inte sammanfatta pressmeddelande: ${error instanceof Error ? error.message : String(error)}`,
       document_id: args.document_id,
-      suggestions: ['Försök igen om en stund', 'Använd search_regering eller get_pressmeddelande istället']
+      suggestions: ['Försök igen om en stund', 'Använd search_regering eller get_pressmeddelande istället', 'Kontrollera att URL:en är korrekt']
     };
   }
 }

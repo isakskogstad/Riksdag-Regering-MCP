@@ -7,6 +7,84 @@ och detta projekt följer [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ---
 
+## [2.2.1] - 2025-01-23
+
+### 🐛 KRITISKA BUGGFIXAR
+
+#### Fixade verktyg (4 st)
+
+1. **`get_pressmeddelande` & `summarize_pressmeddelande`**
+   - **Problem:** URL-matchning misslyckades för pressmeddelanden från `search_regering`
+   - **Fix:**
+     - Stöd för full regeringen.se URL direkt
+     - Förbättrad URL-slug matching (både exakt och partiell)
+     - Kräver minst 4 tecken för fritext-sökning
+     - Bättre felmeddelanden med användbar vägledning
+   - **Exempel:** Nu fungerar både `hojda-anslag-till-forskningsfinansiarerna` och full URL
+
+2. **`get_calendar_events`**
+   - **Problem:** Kraschade när Riksdagens API returnerade HTML istället för JSON
+   - **Fix:** Graceful error handling - returnerar informativt felmeddelande istället
+   - **Notering:** Detta är ett känt problem med Riksdagens externa API
+
+3. **`get_voting_group`**
+   - **Problem:** Ignorerade alla parametrar (rm, bet, punkt) och returnerade hårdkodat data från 2009/10
+   - **Fix:**
+     - Använder nu korrekt response key: `voteringlistagrupp` (inte `voteringlista`)
+     - Explicit parameter-filtrering för att undvika undefined values
+     - Korrekt mappning av parametrar till API-anrop
+
+### 📊 DATAKVALITETSFÖRBÄTTRINGAR
+
+#### Fixade (3 st)
+
+1. **`get_dokument` - Dubbel URL-prefix**
+   - **Problem:** URL-fältet kunde få `https:https://...` (dubbel prefix)
+   - **Fix:** Kontrollerar nu om URL redan har protocol prefix
+
+2. **`enhanced_government_search` - Ledamöter alltid tom**
+   - **Problem:** Sökte på `fnamn` OCH `enamn` samtidigt (AND-logik), hittade aldrig någon
+   - **Fix:** Gör nu två separata API-anrop (förnamn + efternamn) och kombinerar unika resultat
+   - **Resultat:** Ledamöter-sökning fungerar nu korrekt
+
+3. **`get_data_dictionary` - Felaktiga verktygs-referenser**
+   - **Problem:** Refererade till icke-existerande verktyg från v1.0
+   - **Fix:** Uppdaterade alla `usage`-fält till faktiskt tillgängliga verktyg
+   - **Borttagna referenser:**
+     - `analyze_partifordelning`, `compare_ledamoter`
+     - `analyze_dokument_statistik`, `global_search`
+     - `analyze_parti_activity`
+     - `analyze_votering`, `compare_parti_rostning`
+     - `get_votering_roster_summary`
+     - `compare_riksdag_regering`
+   - **Nya referenser:** `enhanced_government_search`, `fetch_paginated_documents`, etc.
+
+### 🔄 Kompatibilitet
+
+- ✅ Alla ändringar är bakåtkompatibla
+- ✅ Inga breaking changes
+- ✅ Befintliga verktyg fungerar som förut, men nu med fixade buggar
+
+### 📋 Migration Guide
+
+**Inget behövs** - v2.2.1 är en drop-in replacement för v2.2.0.
+
+**Rekommendationer för användare:**
+
+1. **Pressmeddelanden:**
+   - Använd full URL från `search_regering` resultat
+   - Alternativt: använd hela URL-sluggen (inte bara korta fragment)
+
+2. **Kalender:**
+   - `get_calendar_events` kan returnera fel p.g.a. Riksdagens API
+   - Använd `search_dokument` som alternativ för kommande debatter
+
+3. **Voteringar:**
+   - `get_voting_group` fungerar nu korrekt med alla parametrar
+   - Tidigare versioner returnerade felaktig data - uppdatera!
+
+---
+
 ## [2.2.0] - 2025-11-23
 
 ### 🔒 SÄKERHET & OPTIMERING

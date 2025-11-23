@@ -52,11 +52,22 @@ export async function enhancedGovernmentSearch(args: z.infer<typeof enhancedSear
   const regeringenLimit = normalizeLimit(args.regeringenLimit, 5, 20);
 
   // Fetch Riksdagen data
-  const [documents, anforanden, ledamoter] = await Promise.all([
+  // For ledamöter, search both first name and last name separately and combine unique results
+  const [documents, anforanden, ledamoterByFnamn, ledamoterByEnamn] = await Promise.all([
     fetchDokumentDirect({ sok: args.query, sz: limit * 2 }), // Fetch extra to account for person pages
     fetchAnforandenDirect({ sok: args.query, sz: limit }),
-    fetchLedamoterDirect({ fnamn: args.query, enamn: args.query, sz: limit }),
+    fetchLedamoterDirect({ fnamn: args.query, sz: limit }),
+    fetchLedamoterDirect({ enamn: args.query, sz: limit }),
   ]);
+
+  // Combine and deduplicate ledamöter by intressent_id
+  const ledamoterMap = new Map();
+  [...ledamoterByFnamn.data, ...ledamoterByEnamn.data].forEach((person) => {
+    if (person.intressent_id && !ledamoterMap.has(person.intressent_id)) {
+      ledamoterMap.set(person.intressent_id, person);
+    }
+  });
+  const ledamoter = { data: Array.from(ledamoterMap.values()).slice(0, limit), hits: ledamoterMap.size };
 
   // Fetch Regeringen data if requested
   let regeringen: any = {

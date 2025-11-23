@@ -64,6 +64,15 @@ export async function getDokument(args: z.infer<typeof getDokumentSchema>) {
       }
     }
 
+    // Build proper URL avoiding double https: prefix
+    let url = dokument.relurl || '';
+    if (dokument.dokument_url_html) {
+      const htmlUrl = dokument.dokument_url_html;
+      url = htmlUrl.startsWith('http://') || htmlUrl.startsWith('https://')
+        ? htmlUrl
+        : `https:${htmlUrl}`;
+    }
+
     return {
       dok_id: dokument.dok_id,
       titel: dokument.titel,
@@ -75,7 +84,7 @@ export async function getDokument(args: z.infer<typeof getDokumentSchema>) {
       text,
       textWarning,
       attachments: dokument.filbilaga?.fil || [],
-      url: dokument.dokument_url_html ? `https:${dokument.dokument_url_html}` : dokument.relurl,
+      url,
       notice: args.include_full_text ? undefined : 'För att få fulltext, sätt include_full_text: true. OBS: Kan vara mycket stor data.',
     };
   } catch (error) {

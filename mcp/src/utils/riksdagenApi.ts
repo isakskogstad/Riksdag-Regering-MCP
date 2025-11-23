@@ -199,25 +199,31 @@ export async function fetchVoteringGroup(params: {
   rm?: string;
   bet?: string;
   punkt?: string;
-  gruppering?: string; // Corrected typo
+  gruppering?: string;
   sz?: number;
   utformat?: string;
 }): Promise<PaginatedResponse<any>> {
   await rateLimiter.waitForToken();
 
-  const queryString = buildQueryString({
-    rm: params.rm,
-    bet: params.bet,
-    punkt: params.punkt,
-    gruppering: params.gruppering, // Now correctly uses params.gruppering
-    sz: params.sz || 500,
+  // Filter out undefined parameters to avoid sending empty query params
+  const queryParams: Record<string, any> = {
     utformat: params.utformat || 'json',
-  });
+    sz: params.sz || 500,
+  };
+
+  // Only add parameters that are actually provided
+  if (params.rm) queryParams.rm = params.rm;
+  if (params.bet) queryParams.bet = params.bet;
+  if (params.punkt) queryParams.punkt = params.punkt;
+  if (params.gruppering) queryParams.gruppering = params.gruppering;
+
+  const queryString = buildQueryString(queryParams);
 
   const url = `${API_BASE}/voteringlistagrupp/?${queryString}`;
   const data = await safeFetch(url);
 
-  return buildPaginatedResponse(data, 'voteringlista');
+  // Use correct response key for grouped voting endpoint
+  return buildPaginatedResponse(data, 'voteringlistagrupp');
 }
 
 export async function fetchKalenderDirect(params: {
@@ -227,7 +233,7 @@ export async function fetchKalenderDirect(params: {
   org?: string;
   sz?: number;
   sort?: string;
-}): Promise<PaginatedResponse<any>> {
+}): Promise<PaginatedResponse<any> | { raw: string; url: string }> {
   await rateLimiter.waitForToken();
 
   const queryString = buildQueryString({
@@ -248,6 +254,10 @@ export async function fetchKalenderDirect(params: {
     const data = JSON.parse(text);
     return buildPaginatedResponse(data, 'kalender');
   } catch (e) {
-    throw new Error(`Riksdagens kalender-API returnerade icke-JSON-innehåll. URL: ${url}. Fel: ${e instanceof Error ? e.message : String(e)}`);
+    // Instead of throwing an error, return the raw HTML/text for graceful handling
+    return {
+      raw: text.substring(0, 500), // Truncate to first 500 chars to avoid huge responses
+      url,
+    };
   }
 }

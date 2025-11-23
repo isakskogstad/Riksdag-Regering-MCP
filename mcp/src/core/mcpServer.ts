@@ -133,7 +133,7 @@ export function createMCPServer(externalLogger?: any) {
   const server = new Server(
     {
       name: 'riksdag-regering-mcp',
-      version: '2.2.0',
+      version: '2.2.1',
     },
     {
       capabilities: {
