@@ -356,9 +356,9 @@ function createApp() {
               },
               {
                 name: 'fetch-report',
-                description: 'Hämtar en rapport (rdlstat, könsstatistik, diarium)',
+                description: 'Hämtar en rapport (ledamotsstatistik, könsstatistik, diarium)',
                 arguments: [
-                  { name: 'report', description: 'Identifierare (ledamotsstatistik, diarium etc.)', required: true }
+                  { name: 'report', description: 'Identifierare (ledamotsstatistik, kontaktutskott, aldersstatistik, konstatsstatistik, mandatperiod, diarium)', required: true }
                 ]
               }
             ]
@@ -440,13 +440,13 @@ function createApp() {
             ]
           },
           'fetch-report': {
-            description: 'Hämtar en rapport (rdlstat, könsstatistik, diarium)',
+            description: 'Hämtar en rapport (ledamotsstatistik, könsstatistik, diarium)',
             messages: [
               {
                 role: 'user',
                 content: {
                   type: 'text',
-                  text: `Hämta rapporten {{report}} från Riksdagens öppna data och summera innehållet.`
+                  text: `Hämta rapporten {{report}} från Riksdagens öppna data och summera innehållet. Giltiga rapporter: ledamotsstatistik, kontaktutskott, aldersstatistik, konstatsstatistik, mandatperiod, diarium.`
                 }
               }
             ]
