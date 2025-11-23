@@ -8,7 +8,65 @@
 
 🇺🇸 Open-source MCP-server for local self-hosting or remote deployment. Enables LLMs to query and retrieve real-time open data, documents, protocols, and records from accessible API:s and open databases from the Parliament and Government Offices of Sweden.
 
-🇸🇪 MCP-server som ger LLMs möjlighet att söka, hitta och extrahera öppen data och information från Riksdagen och Regeringskansliet. Ansluten till samtliga öppna API:er från Riksdagen och nyttjar g0v.se för att tillgå data från Regeringskansliet. 
+🇸🇪 MCP-server som ger LLMs möjlighet att söka, hitta och extrahera öppen data och information från Riksdagen och Regeringskansliet. Ansluten till samtliga öppna API:er från Riksdagen och nyttjar g0v.se för att tillgå data från Regeringskansliet.
+
+---
+
+## 📊 Översikt
+
+### Totalt antal verktyg: **32**
+
+MCP-servern exponerar 32 specialiserade verktyg fördelade över två huvudkategorier:
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+### 🏛️ Riksdagen (18 verktyg)
+
+| Verktyg | Beskrivning |
+|---------|-------------|
+| `search_ledamoter` | Sök efter ledamöter med filter |
+| `search_dokument` | Sök riksdagsdokument |
+| `search_dokument_fulltext` | Fulltextsök i dokument |
+| `search_anforanden` | Sök anföranden från debatter |
+| `search_voteringar` | Sök voteringar och röster |
+| `get_dokument` | Hämta specifikt dokument |
+| `get_ledamot` | Hämta ledamotsinformation |
+| `get_propositioner` | Hämta propositioner |
+| `get_motioner` | Hämta motioner |
+| `get_betankanden` | Hämta betänkanden |
+
+**Andra verktyg:** `get_fragor`, `get_interpellationer`, `get_utskott`, `get_calendar_events`, `get_voting_group`, `fetch_paginated_documents`, `fetch_paginated_anforanden`, `batch_fetch_documents`
+
+</td>
+<td width="50%" valign="top">
+
+### 🏢 Regeringskansliet (14 verktyg)
+
+| Verktyg | Beskrivning |
+|---------|-------------|
+| `search_regering` | Sök regeringsdokument |
+| `get_pressmeddelande` | Hämta pressmeddelande |
+| `summarize_pressmeddelande` | Sammanfatta pressmeddelande |
+| `get_g0v_document_content` | Hämta dokumentinnehåll (Markdown) |
+| `get_g0v_document_types` | Lista dokumenttyper |
+| `get_g0v_category_codes` | Hämta kategorikoder |
+| `analyze_g0v_by_department` | Analysera per departement |
+| `enhanced_government_search` | Kombinerad sökning |
+| `get_g0v_latest_update` | Senaste uppdatering |
+| `get_dokument_innehall` | Dokumentinnehåll + sammanfattning |
+
+**Andra verktyg:** `list_reports`, `fetch_report`, `get_sync_status`, `get_data_dictionary`
+
+</td>
+</tr>
+</table>
+
+### 🔍 Datakällor
+
+- **Riksdagen:** [data.riksdagen.se](https://data.riksdagen.se) - Officiellt öppet API
+- **Regeringen:** [g0v.se](https://g0v.se) - Öppen data från Regeringskansliet
 
 ---
 
