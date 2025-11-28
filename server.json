@@ -1,0 +1,17 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-10-17/server.schema.json",
+  "name": "io.github.isakskogstad/riksdag_regering-mcp",
+  "description": "MCP server for Swedish Parliament & Government - 32 tools for documents, votes, speeches",
+  "version": "2.0.0",
+  "repository": {
+    "url": "https://github.com/isakskogstad/Riksdag-Regering-MCP",
+    "source": "github",
+    "id": "1087404908"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://riksdag-regering-ai.onrender.com/mcp"
+    }
+  ]
+}
