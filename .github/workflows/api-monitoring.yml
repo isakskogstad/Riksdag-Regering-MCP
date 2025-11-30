@@ -1,0 +1,203 @@
+name: API Monitoring & Contract Tests
+
+on:
+  schedule:
+    # Run daily at 8:00 AM UTC (9:00/10:00 CET depending on DST)
+    - cron: '0 8 * * *'
+  workflow_dispatch: # Allow manual trigger
+  push:
+    branches: [main]
+    paths:
+      - 'mcp/tests/contract/**'
+      - '.github/workflows/api-monitoring.yml'
+
+jobs:
+  test-riksdagen-api:
+    name: Riksdagen API Contract Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'mcp/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: mcp
+        run: npm ci
+
+      - name: Run Riksdagen API tests
+        working-directory: mcp
+        run: npm test tests/contract/riksdagen-api.test.ts
+        continue-on-error: true
+        id: riksdagen_tests
+
+      - name: Create issue if tests fail
+        if: failure() && steps.riksdagen_tests.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = '🚨 Riksdagen API Contract Tests Failed';
+            const body = `## Riksdagen API Test Failure
+
+            The automated API monitoring detected failures in the Riksdagen API contract tests.
+
+            **Workflow Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            **Triggered by:** ${{ github.event_name }}
+            **Branch:** ${{ github.ref_name }}
+            **Commit:** ${{ github.sha }}
+
+            ### Possible Causes
+            - API endpoint structure changed
+            - API is down or experiencing issues
+            - Rate limiting triggered
+            - Network connectivity issues
+
+            ### Next Steps
+            1. Review the workflow logs above
+            2. Test the API endpoints manually:
+               - https://data.riksdagen.se/dokumentlista/?utformat=json&sz=5
+               - https://data.riksdagen.se/anforandelista/?utformat=json&sz=5
+               - https://data.riksdagen.se/voteringlista/?utformat=json&sz=5
+               - https://data.riksdagen.se/personlista/?utformat=json&sz=5
+            3. Update the MCP server code if API structure changed
+            4. Update contract tests if expected behavior changed
+
+            cc: @${{ github.repository_owner }}`;
+
+            // Check for existing open issue
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'api-monitoring,riksdagen',
+            });
+
+            if (issues.data.length === 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['api-monitoring', 'riksdagen', 'bug']
+              });
+            }
+
+  test-regeringen-api:
+    name: Regeringen API Contract Tests (g0v.se)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'mcp/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: mcp
+        run: npm ci
+
+      - name: Run Regeringen API tests
+        working-directory: mcp
+        run: npm test tests/contract/regeringen-api.test.ts
+        continue-on-error: true
+        id: regeringen_tests
+
+      - name: Create issue if tests fail
+        if: failure() && steps.regeringen_tests.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = '🚨 Regeringen API Contract Tests Failed (g0v.se)';
+            const body = `## Regeringen API Test Failure
+
+            The automated API monitoring detected failures in the Regeringen API contract tests (via g0v.se).
+
+            **Workflow Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            **Triggered by:** ${{ github.event_name }}
+            **Branch:** ${{ github.ref_name }}
+            **Commit:** ${{ github.sha }}
+
+            ### Possible Causes
+            - g0v.se API endpoint structure changed
+            - g0v.se is down or experiencing issues
+            - regeringen.se changed their data structure
+            - Network connectivity issues
+
+            ### Next Steps
+            1. Review the workflow logs above
+            2. Test the API endpoints manually:
+               - https://g0v.se/pressmeddelanden.json
+               - https://g0v.se/rattsliga-dokument/proposition.json
+               - https://g0v.se/api/latest_updated.json
+               - https://g0v.se/api/codes.json
+            3. Update the MCP server code if API structure changed
+            4. Update contract tests if expected behavior changed
+
+            cc: @${{ github.repository_owner }}`;
+
+            // Check for existing open issue
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'api-monitoring,regeringen',
+            });
+
+            if (issues.data.length === 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['api-monitoring', 'regeringen', 'bug']
+              });
+            }
+
+  notify-success:
+    name: Notify Success
+    runs-on: ubuntu-latest
+    needs: [test-riksdagen-api, test-regeringen-api]
+    if: success()
+
+    steps:
+      - name: Close related issues if all tests pass
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Find all open API monitoring issues
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'api-monitoring',
+            });
+
+            // Close them with a success comment
+            for (const issue of issues.data) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `✅ **API Tests Passing**\n\nAll contract tests are now passing. The API is functioning correctly.\n\n**Workflow Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n\nClosing this issue automatically.`
+              });
+
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed'
+              });
+            }

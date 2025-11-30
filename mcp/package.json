@@ -17,9 +17,9 @@
     "start:stdio": "node dist/index.js",
     "type-check": "tsc --noEmit",
     "lint": "echo 'No linter configured yet'",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
+    "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage"
   },
   "keywords": [
     "mcp",
